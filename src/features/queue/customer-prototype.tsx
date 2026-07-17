@@ -1,6 +1,5 @@
 'use client';
 
-import { motion, useReducedMotion } from 'motion/react';
 import { FormEvent, useState, useSyncExternalStore } from 'react';
 import { AnimatedQueueNumber } from '@/components/animated-queue-number';
 import { QueueStatusLabel } from '@/components/queue-status';
@@ -35,7 +34,6 @@ export function CustomerPrototype({
   );
   const [displayName, setDisplayName] = useState('');
   const [message, setMessage] = useState('');
-  const reduced = useReducedMotion();
   const joinedEntryId = useSyncExternalStore(
     subscribeToSession,
     getSessionEntryId,
@@ -119,11 +117,9 @@ export function CustomerPrototype({
         </p>
       </section>
 
-      <motion.section
+      <section
         className="customer-panel customer-status-panel"
         aria-labelledby="your-place-title"
-        initial={{ opacity: 0, y: reduced ? 0 : 18 }}
-        animate={{ opacity: 1, y: 0 }}
       >
         <div>
           <QueueStatusLabel status={snapshot.queue.status} />
@@ -168,7 +164,7 @@ export function CustomerPrototype({
             {joinedEntry ? `${position} of ${waiting.length}` : '—'}
           </span>
         </div>
-      </motion.section>
+      </section>
     </div>
   );
 }
