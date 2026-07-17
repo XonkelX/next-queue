@@ -1,9 +1,11 @@
 import type { ConnectionState } from '@/features/queue/types';
 
 const labels: Record<ConnectionState, string> = {
+  connecting: 'Connecting',
   connected: 'Connected',
   reconnecting: 'Reconnecting',
   offline: 'Offline',
+  error: 'Connection issue',
 };
 
 export function ConnectionIndicator({ state }: { state: ConnectionState }) {

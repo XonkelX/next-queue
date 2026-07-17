@@ -1,79 +1,91 @@
 # Next
 
-> A calm, real-time queue for small service teams.
+> A calm, persistent real-time queue for small service teams.
 
-Next is a minimalist queue-management product concept for cafés, barbershops, repair desks, clinics, campus offices, and small service counters. It gives customers, staff, and a public display a clear view of one small ordered queue.
+Story 2 replaces the local visual prototype state with a transactional Supabase PostgreSQL engine. Anonymous browser identities can create or join queues; a one-time queue capability grants staff membership; customer, staff, and public-display clients converge through filtered Realtime invalidations followed by authoritative revisioned snapshots.
 
-## Story 1 status
-
-This repository currently contains a polished **visual prototype** with deterministic local state. It demonstrates the intended product, interaction, accessibility, responsive layout, and motion language. It does **not** synchronize separate browser clients yet. Persistent production real-time synchronization is scheduled for the next engineering story.
+The application is not publicly deployed.
 
 ## Product surfaces
 
-- `/q/north-star-cafe` — customer check-in and personal queue position
-- `/q/north-star-cafe/staff` — focused staff queue controls
-- `/q/north-star-cafe/display` — distance-readable public display
-- `/demo` — guided entry to all three prototypes
-- `/` — concise product landing page
-- `/about` — privacy, accessibility, technology, and cost principles
+- `/demo` — create a persistent queue and receive its staff code once
+- `/q/[slug]` — customer check-in, number, position, and service state
+- `/q/[slug]/staff` — capability claim and authorized queue commands
+- `/q/[slug]/display` — public-safe current and upcoming numbers
+- `/` and `/about` — product and project context
 
-## Local development
+## Identity and privacy
 
-Requires Node.js 22 and npm.
+Supabase anonymous sign-in creates a unique user UUID without email, phone, password, social identity, address, or demographics. That user uses PostgreSQL's `authenticated` role; it is different from the public publishable key and the unauthenticated `anon` database role. The session is cookie-backed through `@supabase/ssr` and normally survives refreshes and same-profile tabs. Clearing site data, using another device, or signing out loses the anonymous identity.
+
+Optional customer names live in `queue_entry_private`. Public Realtime tables and public snapshots contain number labels only. No tracking, analytics, advertising, or visitor profiling is installed.
+
+## Local requirements
+
+- Node.js 22
+- npm
+- Docker Desktop or another Docker-compatible runtime with at least 7 GB available
 
 ```bash
 npm install
+npm run db:start
+npm run db:reset
+```
+
+Copy `.env.example` to `.env.local`, then use the local API URL and **publishable** key reported by the CLI. Do not place a secret/service-role key in the browser environment.
+
+```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000/demo](http://localhost:3000/demo). Create a queue, save the one-time staff code privately, then open the customer, staff, and display routes in separate browser contexts. The deterministic `north-star-cafe` seed is public-state visual data only and intentionally has no recoverable staff code; automated tests create isolated queues and consume their one-time code.
+
+The local stack is development-only, uses default local credentials, and must not be exposed to public traffic.
 
 ## Commands
 
 ```bash
+npm run db:start
+npm run db:stop
+npm run db:status
+npm run db:reset
+npm run db:lint
+npm run db:test
+npm run db:types
+npm run db:types:check
+npm run test:integration
+npm run test:realtime
+npm run test:e2e
 npm run format
 npm run format:check
 npm run lint
 npm run typecheck
 npm run test
-npm run test:e2e
 npm run build
+npm audit
 ```
 
-## Architecture direction
+`db:reset` drops only the local database, replays every migration, and reapplies safe seed data. `db:types` regenerates `src/lib/supabase/database.types.ts`; do not edit that file manually.
 
-Queue rules live independently from React in `src/features/queue`. A deliberately small adapter contract in `src/lib/realtime` separates the UI from the future persistent provider. The current recommendation is Supabase Postgres with transactional commands and Realtime subscriptions, subject to a focused Story 2 spike and a fresh free-tier review before provisioning anything.
+## Command and authorization model
 
-See [the real-time evaluation](docs/architecture/realtime-evaluation.md) for requirements, current official quotas, alternatives, risks, and the next implementation step.
+Clients have no direct mutation grants. Explicit security-definer RPCs implement create, staff claim, join, call, complete, skip, pause, reopen, and close. Each validates `auth.uid()`, uses a fixed empty `search_path`, locks queue/entry rows, increments the queue revision once, records an idempotency receipt and append-only event, and returns a fresh snapshot. RLS separately limits table reads.
 
-## Design and motion
+One partial unique index permits at most one `SERVING` entry per queue. `(queue_id, sequence)` and `(queue_id, number_label)` are unique, queue numbers are never reused, and position is calculated from ordered waiting rows.
 
-The interface uses a warm neutral foundation, one vermilion accent, large editorial typography, tabular monospace queue numbers, generous whitespace, and borders instead of dashboard-card chrome. Motion communicates number changes, list insertion, completion, and connectivity. Every meaningful animation has a reduced-motion alternative.
+## Realtime and reconnection
 
-See [the motion system](docs/design/motion-system.md).
+Only `queues` and display-safe `queue_entries` are in `supabase_realtime`. Each surface subscribes with a queue-ID filter. A change is an invalidation signal: related messages are debounced for 75 ms, a snapshot RPC is fetched, stale revisions are ignored, and the new authoritative state replaces local state. The client resynchronizes after subscription, browser online, channel recovery, and a meaningful visibility return. Healthy connections do not poll.
 
-## Accessibility
+## Cost boundary
 
-The foundation includes semantic landmarks, one clear page heading per route, keyboard-operable controls, visible focus, 44px minimum icon targets, status text beyond color, restrained `aria-live` regions, stable-width queue numbers, high-contrast display treatment, and `prefers-reduced-motion` support. Browser tests reject serious or critical automated axe violations; automated checks complement manual keyboard, zoom, contrast, and screen-reader review.
+The intended hosted validation target is one Supabase Free project only: no card, trial, compute upgrade, paid backup, PITR, log drain, support plan, custom domain, or usage-based add-on. Current Free projects are limited to two active projects, 500 MB database size, and may pause after roughly one week of low activity. No keep-alive is used to evade pausing. Re-check [official pricing](https://supabase.com/pricing) before provisioning.
 
-## Privacy
+## Documentation
 
-No account, email, phone number, address, tracking, analytics, advertising, or third-party profiling is used. Customer first name is optional. Public surfaces prioritize queue numbers and never expose internal IDs.
-
-## Cost constraint
-
-Story 1 runs locally with no database or external service. No paid plan, trial, payment information, production credential, hosted analytics, or deployment is configured. The architecture recommendation is explicitly bounded by current free quotas and must fail closed rather than create charges.
-
-## Testing
-
-Vitest covers queue formatting, ordering, allowed and rejected transitions, empty states, joining, staff controls, connection states, public-display content, and reduced-motion helpers. Playwright covers primary routes, customer/staff flows, public display, mobile navigation, theme switching, reduced motion, accessibility, headings, and narrow viewport overflow.
-
-GitHub Actions runs formatting, linting, type checking, unit/component tests, production build, and the Chromium browser suite using only standard GitHub-hosted workflow features.
-
-## Roadmap
-
-1. **Story 1 — Foundation and visual prototype:** current.
-2. **Story 2 — Persistent real-time queue:** transactional command endpoint, database policies, subscriptions, reconnect/resync, conflict tests, and quota-safe deployment decision.
-3. **Version 1 polish:** production QA and deployment only after Story 2 is validated.
-
-The Version 1 boundary is documented in [product scope](docs/product/scope.md).
+- [ADR 002](docs/architecture/adr-002-supabase-realtime.md)
+- [Data model](docs/architecture/data-model.md)
+- [Realtime protocol](docs/architecture/realtime-protocol.md)
+- [Authorization and security](docs/security/authorization.md)
+- [Motion system](docs/design/motion-system.md)
+- [Product scope](docs/product/scope.md)

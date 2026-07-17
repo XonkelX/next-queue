@@ -19,19 +19,19 @@ export default function AboutPage() {
             <p className="eyebrow">Privacy</p>
             <h2>Less data is better.</h2>
             <p>
-              The Version 1 product needs no account, email, phone number,
-              address, analytics, advertising, or third-party profiling. A first
-              name is optional, and public displays prioritize queue numbers.
+              Anonymous browser identities require no email, phone number,
+              address, password, analytics, advertising, or profiling. A first
+              name is optional, isolated from public queue state, and visible
+              only to its owner and authorized staff.
             </p>
           </section>
           <section className="about-block">
             <p className="eyebrow">Technology</p>
             <h2>Built around one small domain.</h2>
             <p>
-              Next.js, strict TypeScript, Motion, schema-ready domain
-              boundaries, Vitest, Testing Library, and Playwright form the
-              foundation. Story 1 deliberately uses local deterministic state;
-              production synchronization comes next.
+              Next.js, strict TypeScript, Supabase PostgreSQL, transactional RPC
+              commands, Row Level Security, Realtime invalidation, Motion,
+              Vitest, pgTAP, and Playwright form the engineering foundation.
             </p>
           </section>
           <section className="about-block">
@@ -48,10 +48,9 @@ export default function AboutPage() {
             <p className="eyebrow">Cost</p>
             <h2>Designed to remain $0.</h2>
             <p>
-              No paid service, trial, database, production credential,
-              analytics, or deployment is enabled in this foundation story.
-              Infrastructure will only be provisioned after its free-tier
-              constraints are verified.
+              The local stack uses Docker and the Supabase CLI. Hosted
+              validation is limited to one Free project with no trial, payment
+              method, paid add-on, analytics, or application deployment.
             </p>
           </section>
         </div>

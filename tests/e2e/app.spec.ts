@@ -18,15 +18,18 @@ test.describe('primary routes', () => {
       await page.goto(route);
       await expect(page.locator('h1')).toHaveCount(1);
       const results = await new AxeBuilder({ page }).analyze();
-      const severe = results.violations.filter((violation) =>
-        ['serious', 'critical'].includes(violation.impact ?? ''),
-      );
-      expect(severe).toEqual([]);
+      expect(
+        results.violations.filter((violation) =>
+          ['serious', 'critical'].includes(violation.impact ?? ''),
+        ),
+      ).toEqual([]);
     });
   }
 });
 
-test('landing and demo routes communicate the product', async ({ page }) => {
+test('landing and demo routes communicate the persistent product', async ({
+  page,
+}) => {
   await page.goto('/');
   await expect(
     page.getByRole('heading', { name: 'A calmer way to wait.' }),
@@ -36,26 +39,22 @@ test('landing and demo routes communicate the product', async ({ page }) => {
   await expect(
     page.getByRole('heading', { name: /every side/i }),
   ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: /create a queue/i }),
+  ).toBeVisible();
 });
 
-test('customer prototype joins the queue', async ({ page }) => {
-  await page.goto('/q/north-star-cafe');
-  await page.getByLabel(/first name/i).fill('Ari');
-  await page.getByRole('button', { name: 'Join the queue' }).click();
-  await expect(page.getByLabel('Queue number A-029')).toBeVisible();
-});
-
-test('staff prototype changes local queue state', async ({ page }) => {
+test('unauthorized staff sees only the claim form and a generic failure', async ({
+  page,
+}) => {
   await page.goto('/q/north-star-cafe/staff');
-  await page.getByRole('button', { name: 'Complete' }).click();
-  await page.getByRole('button', { name: 'Call next' }).click();
-  await expect(page.getByLabel('Queue number A-025')).toBeVisible();
-});
-
-test('public display shows active and upcoming numbers', async ({ page }) => {
-  await page.goto('/q/north-star-cafe/display');
-  await expect(page.getByLabel('Queue number A-024')).toBeVisible();
-  await expect(page.getByText('A-025')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Call next' })).toHaveCount(0);
+  await page.getByLabel('Private access code').fill('not-valid');
+  await page.getByRole('button', { name: 'Open staff board' }).click();
+  await expect(page.locator('#staff-access-message')).toContainText(
+    /could not be verified/i,
+  );
+  await expect(page).not.toHaveURL(/code=/);
 });
 
 test('mobile navigation is keyboard operable', async ({ page }) => {
@@ -75,10 +74,10 @@ test('theme switching applies the dark theme', async ({ page }) => {
   await expect(page.locator('html')).toHaveClass(/dark/);
 });
 
-test('reduced motion keeps content visible', async ({ page }) => {
+test('reduced motion keeps live content visible', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/q/north-star-cafe/display');
-  await expect(page.getByLabel('Queue number A-024')).toBeVisible();
+  await expect(page.getByText('Queue is clear')).toBeVisible();
 });
 
 for (const width of [320, 375]) {
@@ -86,12 +85,15 @@ for (const width of [320, 375]) {
     await page.setViewportSize({ width, height: 800 });
     for (const route of routes) {
       await page.goto(route);
-      const overflow = await page.evaluate(
-        () =>
-          document.documentElement.scrollWidth >
-          document.documentElement.clientWidth,
-      );
-      expect(overflow, `${route} overflowed at ${width}px`).toBe(false);
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              document.documentElement.scrollWidth <=
+              document.documentElement.clientWidth,
+          ),
+        )
+        .toBe(true);
     }
   });
 }
