@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, story-2/realtime-engine]
+    branches: [main]
   pull_request:
 
 concurrency:
