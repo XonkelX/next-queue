@@ -30,6 +30,8 @@ Queue and entry messages from one transaction can arrive rapidly, so a 75 ms deb
 
 There is no healthy-connection polling, Presence, global schema channel, custom heartbeat write, or private-table subscription.
 
+An `online` event performs an authoritative refresh before restoring the visible `CONNECTED` state. A failed refresh remains reconnecting or enters the adapter's error path; network reachability alone is not treated as successful convergence.
+
 ## Commands and retry
 
 A new user intent gets a UUID request ID. Automatic retry must retain that UUID. The RPC validates actor/type reuse, performs its transaction, and returns a snapshot. Buttons show local pending feedback but do not invent an authoritative result. Typed conflicts restore the control and explain the recoverable state. Realtime is confirmation/invalidation; the RPC result may update the UI immediately.
