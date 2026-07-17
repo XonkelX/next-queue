@@ -18,7 +18,7 @@ Queue numbers use a configurable prefix and monotonically increasing integer, fo
 
 ## Non-goals
 
-Authentication in the foundation, organizations, teams, billing, subscriptions, customer accounts, email, SMS, push, AI, analytics, reports, calendars, payments, uploads, multiple locations, inventory, appointments, schedules, settings systems, role management, a marketing CMS, and native mobile apps are outside Version 1.
+Permanent email/password or social accounts, organizations, teams, billing, subscriptions, customer accounts, email, SMS, push, AI, analytics, reports, calendars, payments, uploads, multiple locations, inventory, appointments, schedules, settings systems, role management, a marketing CMS, and native mobile apps are outside Version 1. Anonymous browser identity and queue-specific staff capability membership are implementation security mechanisms, not account-management features.
 
 ## Primary workflows
 
@@ -33,4 +33,4 @@ Authentication in the foundation, organizations, teams, billing, subscriptions, 
 
 Version 1 is done when all three surfaces are polished and understandable, domain invariants hold under concurrent commands, connected screens synchronize and recover, accessibility and narrow responsive QA pass, free-tier operation is verified without payment information, CI is green, production security is reviewed, and documentation does not overstate capabilities.
 
-Story 1 satisfies the visual and domain foundation only. Production persistence and multi-client synchronization remain explicitly scheduled for Story 2.
+Story 1 satisfies the visual and domain foundation. Story 2 implements persistent PostgreSQL state, anonymous identity, transactional commands, database authorization, filtered Realtime invalidation, revisioned snapshots, reconnect convergence, and local multi-client validation. Public application deployment and production operations remain explicitly out of scope.
