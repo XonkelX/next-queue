@@ -4,6 +4,7 @@ export const productConfig = {
   demoQueueSlug: 'north-star-cafe',
   demoQueueName: 'North Star Coffee',
   defaultQueuePrefix: 'A',
+  siteUrl: 'https://next-queue-omega.vercel.app',
 } as const;
 
 export const demoRoutes = {

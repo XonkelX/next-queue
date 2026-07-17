@@ -5,11 +5,20 @@ import { ThemeProvider } from '@/components/theme-provider';
 import './globals.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(productConfig.siteUrl),
   title: {
     default: `${productConfig.name} — A calmer way to wait`,
     template: `%s — ${productConfig.name}`,
   },
   description: productConfig.statement,
+  alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    url: '/',
+    siteName: productConfig.name,
+    title: `${productConfig.name} — A calmer way to wait`,
+    description: productConfig.statement,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
