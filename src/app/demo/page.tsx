@@ -1,6 +1,9 @@
 import { ArrowRight, Monitor, Smartphone, Users } from 'lucide-react';
 import Link from 'next/link';
 import { demoRoutes } from '@/config/product';
+import { CreateQueuePanel } from '@/features/queue/create-queue-panel';
+
+export const dynamic = 'force-dynamic';
 
 const demos = [
   {
@@ -12,7 +15,7 @@ const demos = [
   {
     title: 'Staff',
     description:
-      'Call, complete, skip, and pause with deterministic local state.',
+      'Claim access, then call, complete, skip, pause, reopen, or close.',
     href: demoRoutes.staff,
     icon: Users,
   },
@@ -28,22 +31,22 @@ export default function DemoPage() {
   return (
     <main id="main-content" className="page-shell">
       <div className="demo-intro">
-        <p className="eyebrow">Story 1 visual prototype</p>
+        <p className="eyebrow">Story 2 persistent prototype</p>
         <h1>See the queue from every side.</h1>
         <p className="lede">
-          Open each surface to explore the intended flow, motion, and responsive
-          behavior.
+          Create a persistent queue, then open each synchronized surface in a
+          separate browser context.
         </p>
       </div>
       <aside className="demo-note">
         <span aria-hidden="true">↗</span>
         <span>
-          Try opening all three views in separate tabs. This foundation uses
-          deterministic local state, so tabs are not synchronized yet.
-          Persistent multi-client real-time behavior is the next engineering
-          story.
+          Open staff, customer, and display views separately. PostgreSQL is
+          authoritative; Realtime invalidates each client and a fresh revisioned
+          snapshot converges the interface.
         </span>
       </aside>
+      <CreateQueuePanel />
       <div className="demo-grid">
         {demos.map(({ title, description, href, icon: Icon }) => (
           <Link className="demo-card" href={href} key={href}>

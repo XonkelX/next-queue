@@ -469,12 +469,57 @@ button {
 }
 
 .state-paused,
+.state-connecting,
 .state-reconnecting {
   color: var(--warning);
 }
 
 .state-closed,
-.state-offline {
+.state-offline,
+.state-error {
+  color: var(--muted);
+}
+
+.setup-panel {
+  max-width: 760px;
+  margin: 52px auto;
+  padding: clamp(28px, 5vw, 52px);
+  border: 1px solid var(--line);
+  background: var(--paper-strong);
+}
+
+.setup-panel h2 {
+  margin-top: 0;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  letter-spacing: -0.045em;
+}
+
+.setup-form {
+  display: grid;
+  gap: 18px;
+}
+
+.setup-form .field-label {
+  margin-top: 12px;
+}
+
+.code-reveal {
+  margin-top: 26px;
+  padding: 24px;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--paper));
+}
+
+.code-reveal .text-input {
+  margin: 14px 0;
+  font-family: ui-monospace, Consolas, monospace;
+  letter-spacing: 0.08em;
+}
+
+.live-loading {
+  min-height: 420px;
+  display: grid;
+  place-items: center;
   color: var(--muted);
 }
 

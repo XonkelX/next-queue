@@ -15,6 +15,7 @@ export interface Queue {
   name: string;
   prefix: string;
   status: QueueStatus;
+  revision: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,18 +24,24 @@ export interface QueueEntry {
   id: string;
   queueId: string;
   number: number;
-  displayName?: string;
+  numberLabel?: string | undefined;
+  displayName?: string | undefined;
   status: QueueEntryStatus;
+  revision: number;
   joinedAt: string;
-  calledAt?: string;
-  completedAt?: string;
-  skippedAt?: string;
+  calledAt?: string | undefined;
+  completedAt?: string | undefined;
+  skippedAt?: string | undefined;
   updatedAt: string;
 }
 
 export interface QueueSnapshot {
   queue: Queue;
   entries: QueueEntry[];
+  role?: 'public' | 'customer' | 'staff';
+  ownEntryId?: string;
+  waitingCount?: number;
+  serverTime?: string;
 }
 
 export type QueueCommand =
@@ -44,4 +51,5 @@ export type QueueCommand =
   | { type: 'SKIP'; entryId: string }
   | { type: 'SET_QUEUE_STATUS'; status: QueueStatus };
 
-export type ConnectionState = 'connected' | 'reconnecting' | 'offline';
+export type ConnectionState =
+  'connecting' | 'connected' | 'reconnecting' | 'offline' | 'error';

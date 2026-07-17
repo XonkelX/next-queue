@@ -87,6 +87,7 @@ export function applyQueueCommand(
       number: nextNumber,
       ...(displayName ? { displayName } : {}),
       status: 'WAITING',
+      revision: queue.revision,
       joinedAt: now,
       updatedAt: now,
     };
