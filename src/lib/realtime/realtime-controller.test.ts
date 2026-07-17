@@ -203,6 +203,7 @@ describe('Realtime invalidation and convergence', () => {
       expect(onSnapshot.mock.calls.at(-1)?.[0].queue.revision).toBe(4),
     );
     expect(states).toContain('reconnecting');
+    await waitFor(() => expect(states.at(-1)).toBe('connected'));
     await cleanup();
   });
 

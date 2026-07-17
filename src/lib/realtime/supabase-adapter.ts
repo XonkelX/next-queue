@@ -224,12 +224,12 @@ export class SupabaseQueueAdapter implements QueueRealtimeAdapter {
     const gate = new RevisionGate();
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    let refreshInFlight: Promise<void> | undefined;
+    let refreshInFlight: Promise<boolean> | undefined;
     let refreshQueued = false;
     let hiddenAt = 0;
 
-    const refresh = (reason: string, force = false): Promise<void> => {
-      if (stopped) return Promise.resolve();
+    const refresh = (reason: string, force = false): Promise<boolean> => {
+      if (stopped) return Promise.resolve(false);
       if (refreshInFlight) {
         refreshQueued = true;
         return refreshInFlight;
@@ -243,14 +243,16 @@ export class SupabaseQueueAdapter implements QueueRealtimeAdapter {
               revision: snapshot.queue.revision,
             });
           }
+          return true;
         })
-        .catch((error: unknown) =>
+        .catch((error: unknown) => {
           callbacks.onError(
             error instanceof Error
               ? error
               : new Error('Snapshot refresh failed.'),
-          ),
-        )
+          );
+          return false;
+        })
         .finally(() => {
           refreshInFlight = undefined;
           if (refreshQueued) {
@@ -307,7 +309,9 @@ export class SupabaseQueueAdapter implements QueueRealtimeAdapter {
 
     const online = () => {
       callbacks.onConnectionState('reconnecting');
-      void refresh('browser-online', true);
+      void refresh('browser-online', true).then((synchronized) => {
+        if (synchronized && !stopped) callbacks.onConnectionState('connected');
+      });
     };
     const offline = () => callbacks.onConnectionState('offline');
     const visibility = () => {
