@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(31);
+select plan(35);
 
 insert into auth.users (instance_id, id, aud, role, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, is_anonymous)
 values
@@ -73,13 +73,22 @@ select set_config('request.jwt.claim.sub', '41000000-0000-4000-8000-000000000003
 select is(public.join_queue(current_setting('test.queue_slug'), null, '43000000-0000-4000-8000-000000000002')->>'ok', 'true', 'customer can rejoin after terminal state');
 select set_config('request.jwt.claim.sub', '41000000-0000-4000-8000-000000000002', true);
 select is(public.skip_entry(current_setting('test.queue_id')::uuid, (select id from public.queue_entries where queue_id = current_setting('test.queue_id')::uuid and status = 'WAITING'), '47000000-0000-4000-8000-000000000001') #>> '{entries,1,status}', 'SKIPPED', 'waiting entry can be skipped');
+select is(public.skip_entry(current_setting('test.queue_id')::uuid, (select id from public.queue_entries where queue_id = current_setting('test.queue_id')::uuid and status = 'SKIPPED'), '47000000-0000-4000-8000-000000000001')->>'replayed', 'true', 'skip retry is idempotent');
 select is(public.pause_queue(current_setting('test.queue_id')::uuid, '48000000-0000-4000-8000-000000000001') #>> '{queue,status}', 'PAUSED', 'open queue pauses');
+select is(public.pause_queue(current_setting('test.queue_id')::uuid, '48000000-0000-4000-8000-000000000001')->>'replayed', 'true', 'pause retry is idempotent');
+select throws_ok(
+  $$select public.close_queue(current_setting('test.queue_id')::uuid, '48000000-0000-4000-8000-000000000001')$$,
+  '22023',
+  'REQUEST_ID_MISMATCH',
+  'request ID cannot be reused for another command type'
+);
 
 select set_config('request.jwt.claim.sub', '41000000-0000-4000-8000-000000000004', true);
 select is(public.join_queue(current_setting('test.queue_slug'), null, '43000000-0000-4000-8000-000000000003')->>'error', 'QUEUE_PAUSED', 'paused queue rejects join');
 select set_config('request.jwt.claim.sub', '41000000-0000-4000-8000-000000000002', true);
 select is(public.reopen_queue(current_setting('test.queue_id')::uuid, '48000000-0000-4000-8000-000000000002') #>> '{queue,status}', 'OPEN', 'paused queue reopens');
 select is(public.close_queue(current_setting('test.queue_id')::uuid, '48000000-0000-4000-8000-000000000003') #>> '{queue,status}', 'CLOSED', 'open queue closes');
+select is(public.close_queue(current_setting('test.queue_id')::uuid, '48000000-0000-4000-8000-000000000003')->>'replayed', 'true', 'close retry is idempotent');
 select is(public.reopen_queue(current_setting('test.queue_id')::uuid, '48000000-0000-4000-8000-000000000004')->>'error', 'CONFLICT', 'closed queue cannot reopen');
 
 select throws_ok(

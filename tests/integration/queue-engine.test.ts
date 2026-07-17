@@ -81,6 +81,35 @@ describe('persistent queue engine', () => {
     expect(accessCode).toMatch(/^[A-F0-9]{36}$/);
   });
 
+  it('serializes simultaneous queue creation with one request ID', async () => {
+    const sharedRequestId = crypto.randomUUID();
+    const [first, second] = await Promise.all([
+      creator.rpc('create_queue', {
+        queue_name: 'Retry-safe Counter',
+        queue_prefix: 'R',
+        request_id: sharedRequestId,
+      }),
+      creator.rpc('create_queue', {
+        queue_name: 'Retry-safe Counter',
+        queue_prefix: 'R',
+        request_id: sharedRequestId,
+      }),
+    ]);
+    if (first.error) throw first.error;
+    if (second.error) throw second.error;
+    const results = [record(first.data), record(second.data)];
+    expect(
+      new Set(
+        results.map((result) =>
+          String((result.queue as Record<string, Json>).id),
+        ),
+      ).size,
+    ).toBe(1);
+    expect(results.filter((result) => result.replayed === true)).toHaveLength(
+      1,
+    );
+  });
+
   it('claims staff access in a second identity', async () => {
     const result = record(
       (

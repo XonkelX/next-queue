@@ -19,6 +19,29 @@ function requestId() {
   return crypto.randomUUID();
 }
 
+type RpcResult = {
+  data: Json | null;
+  error: { message: string } | null;
+};
+
+function isRetryableNetworkFailure(result: RpcResult) {
+  return Boolean(
+    result.error &&
+    /failed to fetch|fetch failed|network error|load failed/i.test(
+      result.error.message,
+    ),
+  );
+}
+
+export async function withStableRequestId<T>(
+  operation: (requestId: string) => PromiseLike<T>,
+  shouldRetry: (result: T) => boolean,
+) {
+  const stableRequestId = requestId();
+  const first = await operation(stableRequestId);
+  return shouldRetry(first) ? operation(stableRequestId) : first;
+}
+
 function parseResult(
   data: Json | null,
   transportError: { message: string } | null,
@@ -89,6 +112,15 @@ export class SupabaseQueueAdapter implements QueueRealtimeAdapter {
     return parseResult(result.data, result.error);
   }
 
+  private async mutate(
+    operation: (stableRequestId: string) => PromiseLike<RpcResult>,
+  ) {
+    await this.ready();
+    return this.snapshot(
+      await withStableRequestId(operation, isRetryableNetworkFailure),
+    );
+  }
+
   async getSnapshot(slug: string) {
     await this.ready();
     return this.snapshot(
@@ -100,12 +132,11 @@ export class SupabaseQueueAdapter implements QueueRealtimeAdapter {
     name: string,
     prefix: string,
   ): Promise<QueueCreationResult> {
-    await this.ready();
-    const result = this.snapshot(
-      await this.client.rpc('create_queue', {
+    const result = await this.mutate((stableRequestId) =>
+      this.client.rpc('create_queue', {
         queue_name: name,
         queue_prefix: prefix,
-        request_id: requestId(),
+        request_id: stableRequestId,
       }),
     );
     const { accessCode, ...snapshot } = result;
@@ -113,84 +144,76 @@ export class SupabaseQueueAdapter implements QueueRealtimeAdapter {
   }
 
   async claimStaffAccess(slug: string, accessCode: string) {
-    await this.ready();
-    return this.snapshot(
-      await this.client.rpc('claim_staff_access', {
+    return this.mutate((stableRequestId) =>
+      this.client.rpc('claim_staff_access', {
         queue_slug: slug,
         access_code: accessCode,
-        request_id: requestId(),
+        request_id: stableRequestId,
       }),
     );
   }
 
   async joinQueue(slug: string, displayName?: string) {
-    await this.ready();
-    return this.snapshot(
-      await this.client.rpc('join_queue', {
+    return this.mutate((stableRequestId) =>
+      this.client.rpc('join_queue', {
         queue_slug: slug,
         display_name: displayName ?? '',
-        request_id: requestId(),
+        request_id: stableRequestId,
       }),
     );
   }
 
   async callNext(queueId: string) {
-    await this.ready();
-    return this.snapshot(
-      await this.client.rpc('call_next', {
+    return this.mutate((stableRequestId) =>
+      this.client.rpc('call_next', {
         queue_id: queueId,
-        request_id: requestId(),
+        request_id: stableRequestId,
       }),
     );
   }
 
   async completeCurrent(queueId: string) {
-    await this.ready();
-    return this.snapshot(
-      await this.client.rpc('complete_active', {
+    return this.mutate((stableRequestId) =>
+      this.client.rpc('complete_active', {
         queue_id: queueId,
-        request_id: requestId(),
+        request_id: stableRequestId,
       }),
     );
   }
 
   async skipEntry(queueId: string, entryId: string) {
-    await this.ready();
-    return this.snapshot(
-      await this.client.rpc('skip_entry', {
+    return this.mutate((stableRequestId) =>
+      this.client.rpc('skip_entry', {
         queue_id: queueId,
         entry_id: entryId,
-        request_id: requestId(),
+        request_id: stableRequestId,
       }),
     );
   }
 
   async pauseQueue(queueId: string) {
-    await this.ready();
-    return this.snapshot(
-      await this.client.rpc('pause_queue', {
+    return this.mutate((stableRequestId) =>
+      this.client.rpc('pause_queue', {
         queue_id: queueId,
-        request_id: requestId(),
+        request_id: stableRequestId,
       }),
     );
   }
 
   async reopenQueue(queueId: string) {
-    await this.ready();
-    return this.snapshot(
-      await this.client.rpc('reopen_queue', {
+    return this.mutate((stableRequestId) =>
+      this.client.rpc('reopen_queue', {
         queue_id: queueId,
-        request_id: requestId(),
+        request_id: stableRequestId,
       }),
     );
   }
 
   async closeQueue(queueId: string) {
-    await this.ready();
-    return this.snapshot(
-      await this.client.rpc('close_queue', {
+    return this.mutate((stableRequestId) =>
+      this.client.rpc('close_queue', {
         queue_id: queueId,
-        request_id: requestId(),
+        request_id: stableRequestId,
       }),
     );
   }

@@ -3,7 +3,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Database, Json } from '@/lib/supabase/database.types';
 import { resetAnonymousSessionForTests } from '@/lib/supabase/session';
-import { RevisionGate, SupabaseQueueAdapter } from './supabase-adapter';
+import {
+  RevisionGate,
+  SupabaseQueueAdapter,
+  withStableRequestId,
+} from './supabase-adapter';
 
 function snapshot(revision: number): Json {
   return {
@@ -84,6 +88,32 @@ beforeEach(() => {
 });
 
 describe('Realtime invalidation and convergence', () => {
+  it('reuses one request ID for an automatic retry', async () => {
+    const seen: string[] = [];
+    const result = await withStableRequestId(
+      async (stableRequestId) => {
+        seen.push(stableRequestId);
+        return { retry: seen.length === 1 };
+      },
+      (value) => value.retry,
+    );
+    expect(result.retry).toBe(false);
+    expect(seen).toHaveLength(2);
+    expect(seen[0]).toBe(seen[1]);
+  });
+
+  it('uses a new request ID for a new user action', async () => {
+    const first = await withStableRequestId(
+      async (id) => id,
+      () => false,
+    );
+    const second = await withStableRequestId(
+      async (id) => id,
+      () => false,
+    );
+    expect(first).not.toBe(second);
+  });
+
   it('accepts only authoritative non-stale revisions', () => {
     const gate = new RevisionGate();
     const revisionTwo = { queue: { revision: 2 } } as never;
