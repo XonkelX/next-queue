@@ -25,6 +25,15 @@ test('public routes and metadata endpoints are healthy', async ({
   );
 });
 
+test('an unknown queue shows the intended unavailable state', async ({
+  page,
+}) => {
+  await page.goto(`/q/unknown-${crypto.randomUUID()}`);
+  await expect(
+    page.getByRole('heading', { name: 'This queue could not be found.' }),
+  ).toBeVisible();
+});
+
 for (const route of applicationRoutes) {
   test(`${route} has clean serious accessibility and console results`, async ({
     page,
