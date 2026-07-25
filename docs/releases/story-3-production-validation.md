@@ -8,7 +8,7 @@ Validated on 2026-07-17 against [next-queue-omega.vercel.app](https://next-queue
 - production branch `main`, repository root, Next.js preset, Node.js 22.x, standard build
 - one existing Supabase Free project in `us-east-1`
 - filtered Realtime publication containing only `queues` and `queue_entries`
-- no custom domain, paid analytics, paid storage, add-on, trial, or payment method
+- Web Analytics and Speed Insights disabled; no custom domain, paid analytics, paid storage, add-on, trial, or payment method
 
 Production has only the following public client configuration, scoped to Production (values intentionally omitted):
 
@@ -56,7 +56,11 @@ The production smoke suite is read-only and is not part of ordinary PR CI. Witho
 
 ## Cleanup
 
-The synthetic queue and all related private entries, memberships, access records, attempts, commands, and events were removed. Final counts were zero for all eight application tables: `queues`, `queue_entries`, `queue_entry_private`, `queue_staff_memberships`, `queue_staff_access`, `queue_staff_access_attempts`, `queue_commands`, and `queue_events`. Twenty-three temporary anonymous users were removed, leaving zero Auth users. All QA browser sessions were closed and the one-time staff credential was discarded.
+The synthetic queue and all related private entries, memberships, access records, attempts, commands, and events were removed. Final counts were zero for all eight application tables: `queues`, `queue_entries`, `queue_entry_private`, `queue_staff_memberships`, `queue_staff_access`, `queue_staff_access_attempts`, `queue_commands`, and `queue_events`. Twenty-three temporary anonymous users were removed during full QA and two more during final post-restore smoke validation, leaving zero Auth users. All QA browser sessions were closed and the one-time staff credential was discarded.
+
+## Final revalidation
+
+On 2026-07-25, the complete suite was rerun before opening the Story 3 PR. Newly published advisories were resolved by updating Next.js to 16.2.12 and pinning patched transitive Sharp and Minimatch versions; `npm audit` returned zero vulnerabilities. Supabase had automatically paused the inactive Free project as documented. The existing project was restored without an upgrade or payment, returned to `ACTIVE_HEALTHY`, and passed anonymous Auth and production route validation. The read-only production smoke suite then passed 10 tests; one display-only test was skipped because the temporary QA queue had already been deleted. Final cleanup again confirmed zero rows in all eight application tables and zero Auth users.
 
 ## Free-tier limitations and remaining risks
 
