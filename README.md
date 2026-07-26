@@ -72,7 +72,7 @@ npm run build
 npm audit
 ```
 
-`npm run test:production` is a read-only smoke check against the public URL. Set `PRODUCTION_BASE_URL` to test another deployment. Queue-route coverage additionally accepts `PRODUCTION_QUEUE_SLUG` for a temporary synthetic queue; the suite never creates or mutates remote records.
+`npm run test:production` is a read-only smoke check against the public URL. Set `PRODUCTION_BASE_URL` to test another deployment. `PRODUCTION_QUEUE_SLUG` optionally adds HTTP health checks for an existing synthetic queue; browser checks remain on public pages so the suite never creates an anonymous identity or mutates remote records.
 
 `db:reset` drops only the local database, replays every migration, and reapplies safe seed data. `db:types` regenerates `src/lib/supabase/database.types.ts`; do not edit that file manually.
 

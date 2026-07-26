@@ -48,11 +48,11 @@ Automated Axe checks covered home, demo, about, customer, staff, and display rou
 - integration: 11 passed
 - Realtime: 9 passed
 - Playwright application suite: 15 passed
-- production smoke with temporary queue: 13 passed, 0 skipped
+- production QA smoke with temporary queue: 13 passed, 0 skipped; its temporary anonymous identities were removed during cleanup
 - formatting, lint, typecheck, clean database reset, database lint, generated types, production build, audit (0 vulnerabilities), and diff checks passed
 - Story 2 post-merge GitHub Actions: quality, database, and browser jobs passed
 
-The production smoke suite is read-only and is not part of ordinary PR CI. Without a temporary queue slug, queue-specific display coverage is skipped by design.
+The ongoing production smoke suite is read-only and is not part of ordinary PR CI. Browser checks cover only public pages; an optional temporary queue slug adds server-rendered HTTP health checks without starting an anonymous browser session.
 
 ## Cleanup
 
@@ -60,7 +60,7 @@ The synthetic queue and all related private entries, memberships, access records
 
 ## Final revalidation
 
-On 2026-07-25, the complete suite was rerun before opening the Story 3 PR. Newly published advisories were resolved by updating Next.js to 16.2.12 and pinning patched transitive Sharp and Minimatch versions; `npm audit` returned zero vulnerabilities. Supabase had automatically paused the inactive Free project as documented. The existing project was restored without an upgrade or payment, returned to `ACTIVE_HEALTHY`, and passed anonymous Auth and production route validation. The read-only production smoke suite then passed 10 tests; one display-only test was skipped because the temporary QA queue had already been deleted. Final cleanup again confirmed zero rows in all eight application tables and zero Auth users.
+On 2026-07-25, the complete suite was rerun before opening the Story 3 PR. Newly published advisories were resolved by updating Next.js to 16.2.12 and pinning patched transitive Sharp and Minimatch versions; `npm audit` returned zero vulnerabilities. Supabase had automatically paused the inactive Free project as documented. The existing project was restored without an upgrade or payment, returned to `ACTIVE_HEALTHY`, and passed anonymous Auth and production route validation. The production smoke suite then passed 10 tests; one display-only test was skipped because the temporary QA queue had already been deleted. Final cleanup again confirmed zero rows in all eight application tables and zero Auth users. Final review hardened the ongoing smoke suite to avoid browser navigation to queue routes, which creates anonymous identities by design; the current read-only suite passes 9 tests and leaves no remote records.
 
 ## Free-tier limitations and remaining risks
 
