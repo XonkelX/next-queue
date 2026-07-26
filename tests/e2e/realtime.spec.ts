@@ -44,7 +44,11 @@ test('customer, staff, and display converge without refresh and resync after off
   await created.page.getByRole('button', { name: 'Call next' }).click();
   await second.context.setOffline(false);
   await expect(second.page.getByText('It’s your turn.')).toBeVisible();
-  await expect(second.page.getByText('Connected')).toBeVisible();
+  await expect(
+    second.page
+      .getByRole('region', { name: 'Keep your place. Keep your day.' })
+      .getByText('Connected', { exact: true }),
+  ).toBeVisible();
   await expect(second.page.getByLabel('Queue number R-002')).toHaveCount(1);
 
   await Promise.all([

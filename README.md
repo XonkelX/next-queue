@@ -2,9 +2,9 @@
 
 > A calm, persistent real-time queue for small service teams.
 
-Story 2 replaces the local visual prototype state with a transactional Supabase PostgreSQL engine. Anonymous browser identities can create or join queues; a one-time queue capability grants staff membership; customer, staff, and public-display clients converge through filtered Realtime invalidations followed by authoritative revisioned snapshots.
+Next uses a transactional Supabase PostgreSQL engine. Anonymous browser identities can create or join queues; a one-time queue capability grants staff membership; customer, staff, and public-display clients converge through filtered Realtime invalidations followed by authoritative revisioned snapshots.
 
-The application is not publicly deployed.
+The production application is live at [next-queue-omega.vercel.app](https://next-queue-omega.vercel.app). It runs on Vercel Hobby with one Supabase Free project in `us-east-1`; no paid service, trial, analytics, storage add-on, or custom domain is part of the deployment.
 
 ## Product surfaces
 
@@ -42,6 +42,12 @@ Open [http://localhost:3000/demo](http://localhost:3000/demo). Create a queue, s
 
 The local stack is development-only, uses default local credentials, and must not be exposed to public traffic.
 
+## Live demo
+
+Open the [production demo](https://next-queue-omega.vercel.app/demo), create a queue, and save the staff code when it appears: the raw code is shown once and cannot be recovered. The creator is immediately authorized. To test synchronization, open the customer, staff, and display links in separate tabs or isolated browser profiles. A second staff profile must claim access with the code. Queue state persists remotely, while staff membership and customer ownership follow each profile's anonymous session.
+
+Clearing site data, signing out, or changing browsers loses that anonymous identity. Losing both the creating staff session and the one-time code means staff access cannot be recovered through the product. Do not enter sensitive or regulated personal information; a display name is optional.
+
 ## Commands
 
 ```bash
@@ -56,6 +62,7 @@ npm run db:types:check
 npm run test:integration
 npm run test:realtime
 npm run test:e2e
+npm run test:production
 npm run format
 npm run format:check
 npm run lint
@@ -64,6 +71,8 @@ npm run test
 npm run build
 npm audit
 ```
+
+`npm run test:production` is a read-only smoke check against the public URL. Set `PRODUCTION_BASE_URL` to test another deployment. `PRODUCTION_QUEUE_SLUG` optionally adds HTTP health checks for an existing synthetic queue; browser checks remain on public pages so the suite never creates an anonymous identity or mutates remote records.
 
 `db:reset` drops only the local database, replays every migration, and reapplies safe seed data. `db:types` regenerates `src/lib/supabase/database.types.ts`; do not edit that file manually.
 
@@ -79,7 +88,20 @@ Only `queues` and display-safe `queue_entries` are in `supabase_realtime`. Each 
 
 ## Cost boundary
 
-The intended hosted validation target is one Supabase Free project only: no card, trial, compute upgrade, paid backup, PITR, log drain, support plan, custom domain, or usage-based add-on. Current Free projects are limited to two active projects, 500 MB database size, and may pause after roughly one week of low activity. No keep-alive is used to evade pausing. Re-check [official pricing](https://supabase.com/pricing) before provisioning.
+Production uses one Supabase Free project and one Vercel Hobby project only: no card, trial, compute upgrade, paid backup, PITR, log drain, paid analytics, paid storage, support plan, custom domain, or usage-based add-on. Free projects have finite database, bandwidth, build, function, and connection quotas and Supabase may pause an inactive project. No keep-alive is used to evade pausing. Re-check provider limits before relying on the service.
+
+This portfolio deployment is provided as-is, without a commercial SLA. It has database-enforced authorization and basic access-attempt throttling, but not enterprise abuse protection, guaranteed recovery, or capacity for unbounded traffic.
+
+## Production deployment
+
+Vercel is connected to `XonkelX/next-queue`, uses `main` as the production branch, Node.js 22.x, and the standard Next.js build. Only these Production variables are configured:
+
+```text
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+```
+
+Deployments are produced by pushing reviewed commits to `main`; a manual equivalent is `npx vercel deploy --prod`. The browser uses only public Supabase configuration—never a service-role key or database password. See the [Story 3 production validation](docs/releases/story-3-production-validation.md) for the release evidence and remaining risks.
 
 ## Documentation
 
@@ -89,3 +111,4 @@ The intended hosted validation target is one Supabase Free project only: no card
 - [Authorization and security](docs/security/authorization.md)
 - [Motion system](docs/design/motion-system.md)
 - [Product scope](docs/product/scope.md)
+- [Story 3 production validation](docs/releases/story-3-production-validation.md)
