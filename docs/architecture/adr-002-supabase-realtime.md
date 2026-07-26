@@ -1,6 +1,6 @@
 # ADR 002: Supabase PostgreSQL and Realtime
 
-**Status:** implemented locally; remote Free validation recorded in the pull request and final Story 2 report
+**Status:** accepted and implemented in Story 2; production validated in Story 3
 
 ## Context and requirements
 
@@ -36,6 +36,6 @@ Every successful mutation increments `queues.revision` exactly once. Entry rows 
 
 ## Free-plan constraints and risks
 
-As verified on 2026-07-17, [Supabase Free pricing](https://supabase.com/pricing) lists two active projects, 500 MB database size, 5 GB egress, and pausing after roughly one week of low activity. [Realtime pricing](https://supabase.com/docs/guides/realtime/pricing) and [limits](https://supabase.com/docs/guides/realtime/limits) remain quota-bound. No keep-alive, paid add-on, trial, or public deployment is part of Story 2.
+As verified on 2026-07-17, [Supabase Free pricing](https://supabase.com/pricing) listed two active projects, 500 MB database size, 5 GB egress, and pausing after roughly one week of low activity. [Realtime pricing](https://supabase.com/docs/guides/realtime/pricing) and [limits](https://supabase.com/docs/guides/realtime/limits) remain quota-bound and should be rechecked before operational use. No keep-alive, paid add-on, or trial is part of the project; Story 3 subsequently validated the public deployment on the existing Free project.
 
 Remaining hardening includes CAPTCHA or stronger anonymous abuse protection, cleanup of abandoned anonymous identities, capability rotation/recovery, more durable distributed attempt throttling, operational monitoring, data retention policy, and reassessment of Broadcast at scale. The current throttle is five failed attempts per user/queue/15-minute window with a 15-minute block; it is deliberately modest, not commercial brute-force protection.
