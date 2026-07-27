@@ -49,13 +49,17 @@ export function CustomerTicket({
         ? 'Queue is paused'
         : 'Queue is closed';
   const guidance = called
-    ? 'It’s your turn — please head to the service point.'
+    ? 'It’s your turn.'
     : ownEntry
       ? 'Stay nearby — this page updates automatically.'
       : 'Join once and keep this page open for live progress.';
 
   return (
-    <div className="ticket-experience">
+    <div
+      className="ticket-experience"
+      role="region"
+      aria-label="Keep your place. Keep your day."
+    >
       <QueueSurfaceHeader
         queueName={queueName}
         surface="Customer ticket"
@@ -92,6 +96,11 @@ export function CustomerTicket({
               <br />
               ahead
             </span>
+            <small>
+              {ownEntry && position
+                ? `${position} of ${waitingCount}`
+                : 'Your position'}
+            </small>
           </div>
           <div className="ticket-stat ticket-stat-serving">
             <Megaphone aria-hidden="true" />

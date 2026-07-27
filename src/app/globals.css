@@ -7,7 +7,7 @@
   --muted: #625f57;
   --line: #c9beaa;
   --line-strong: #777168;
-  --accent: #ec321d;
+  --accent: #a92b18;
   --accent-ink: #ffffff;
   --accent-soft: #ffc2b4;
   --signal-blue: #103f9c;
@@ -1257,6 +1257,17 @@ button {
   line-height: 0.8;
 }
 
+.ticket-stat-position {
+  flex-wrap: wrap;
+}
+
+.ticket-stat-position small {
+  flex-basis: 100%;
+  margin-left: 48px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
 .ticket-stat-position span {
   font-weight: 800;
   line-height: 1.05;
@@ -1452,7 +1463,7 @@ button {
 }
 
 .staff-experience .staff-active {
-  background: var(--accent);
+  background: #f13a22;
   color: #11110f;
   border-right: 2px solid var(--ink);
 }
