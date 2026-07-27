@@ -1,4 +1,3 @@
-import { PrototypeHeader } from '@/components/prototype-header';
 import { StaffLive } from '@/features/queue/staff-live';
 
 export const dynamic = 'force-dynamic';
@@ -9,8 +8,7 @@ export default async function StaffPage({
   const { slug } = await params;
 
   return (
-    <main id="main-content" className="prototype-shell">
-      <PrototypeHeader eyebrow="Staff queue board" title="Live staff queue" />
+    <main id="main-content" className="queue-page-shell">
       <StaffLive slug={slug} />
     </main>
   );

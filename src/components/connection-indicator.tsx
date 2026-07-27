@@ -8,12 +8,17 @@ const labels: Record<ConnectionState, string> = {
   error: 'Connection issue',
 };
 
-export function ConnectionIndicator({ state }: { state: ConnectionState }) {
+export function ConnectionIndicator({
+  state,
+  announce = true,
+}: {
+  state: ConnectionState;
+  announce?: boolean;
+}) {
   return (
     <span
       className={`connection-state state-${state}`}
-      role="status"
-      aria-live="polite"
+      {...(announce ? { role: 'status', 'aria-live': 'polite' } : {})}
     >
       <span className="status-dot" aria-hidden="true" />
       {labels[state]}

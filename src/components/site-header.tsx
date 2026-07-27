@@ -14,7 +14,7 @@ const links = [
 
 export function SiteHeader() {
   const pathname = usePathname();
-  if (pathname.endsWith('/display')) return null;
+  if (pathname.startsWith('/q/')) return null;
 
   return (
     <header className="site-header">
