@@ -48,6 +48,13 @@ export function CustomerTicket({
       : queueStatus === 'PAUSED'
         ? 'Queue is paused'
         : 'Queue is closed';
+  const liveUpdateLabel: Record<ConnectionState, string> = {
+    connected: 'Live updates connected',
+    connecting: 'Live updates starting',
+    reconnecting: 'Live updates resuming',
+    offline: 'Live updates interrupted',
+    error: 'Live updates unavailable',
+  };
   const guidance = called
     ? 'It’s your turn.'
     : ownEntry
@@ -115,7 +122,7 @@ export function CustomerTicket({
           </div>
           <div className="ticket-stat ticket-stat-live">
             <Radio aria-hidden="true" />
-            <span>Live updates {connection}</span>
+            <span>{liveUpdateLabel[connection]}</span>
           </div>
         </aside>
 
