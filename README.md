@@ -31,15 +31,15 @@ Use synthetic information only. An optional customer first name is visible only 
 | ------------------------------------------------------------------------ | --------------------------------------------------------------------- |
 | ![Create a persistent queue](docs/assets/screenshots/queue-creation.png) | ![Customer queue status](docs/assets/screenshots/customer-status.png) |
 
-| Staff board                                                                                | Public display                                                                          |
-| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
-| ![Staff queue board with two synthetic customers](docs/assets/screenshots/staff-board.png) | ![Public display showing the active number](docs/assets/screenshots/public-display.png) |
+| Staff board                                                                                 | Public display                                                                          |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| ![Staff queue board with a synthetic waiting list](docs/assets/screenshots/staff-board.png) | ![Public display showing the active number](docs/assets/screenshots/public-display.png) |
 
 | Mobile                                                                         | Dark theme                                                                 |
 | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
 | ![Responsive customer view on mobile](docs/assets/screenshots/mobile-view.png) | ![Next landing page in dark theme](docs/assets/screenshots/dark-theme.png) |
 
-All portfolio media was captured from production with a temporary synthetic queue. The queue, related rows, anonymous identities, and one-time capability were removed after capture.
+All portfolio media was captured from the final production build with a temporary synthetic queue. The queue, related rows, anonymous identities, and one-time capability were removed after capture.
 
 ## Architecture
 
@@ -151,11 +151,11 @@ Clients resynchronize after initial subscription, browser `online`, channel reco
 
 ## Testing
 
-The release evidence contains 130 passing automated checks without double-counting the Realtime unit subset:
+The release evidence contains 131 passing automated checks without double-counting the Realtime unit subset:
 
 | Layer                  | Passing checks | What it covers                                                                                          |
 | ---------------------- | -------------: | ------------------------------------------------------------------------------------------------------- |
-| Vitest unit/component  |             33 | transitions, UI behavior, session handling, revision convergence; includes 9 focused Realtime tests     |
+| Vitest unit/component  |             34 | transitions, UI behavior, session handling, revision convergence; includes 9 focused Realtime tests     |
 | pgTAP database         |             62 | RLS, grants, constraints, functions, privacy, publication, concurrency, idempotency                     |
 | Supabase integration   |             11 | persistent commands and authorization through the public client                                         |
 | Playwright application |             15 | end-to-end workflows and multi-client synchronization                                                   |
