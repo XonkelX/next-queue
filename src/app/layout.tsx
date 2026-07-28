@@ -3,6 +3,7 @@ import { productConfig } from '@/config/product';
 import { SiteHeader } from '@/components/site-header';
 import { ThemeProvider } from '@/components/theme-provider';
 import './globals.css';
+import './ticket-theme.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL(productConfig.siteUrl),

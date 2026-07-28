@@ -1,4 +1,14 @@
-import { ArrowRight, Eye, ShieldCheck, Wifi } from 'lucide-react';
+import {
+  ArrowRight,
+  Eye,
+  Info,
+  Monitor,
+  ShieldCheck,
+  Store,
+  UserRound,
+  Users,
+  Wifi,
+} from 'lucide-react';
 import Link from 'next/link';
 import { LandingQueuePreview } from '@/components/landing-queue-preview';
 import { SiteFooter } from '@/components/site-footer';
@@ -10,26 +20,29 @@ const surfaces = [
     description:
       'Join in seconds, then see your number and position without creating an account.',
     href: demoRoutes.customer,
+    icon: UserRound,
   },
   {
     title: 'Staff queue board',
     description:
       'One focused place to call, complete, skip, and pause the flow of service.',
     href: demoRoutes.staff,
+    icon: Users,
   },
   {
     title: 'Public display',
     description:
       'A distance-readable view that makes the active number unmistakable.',
     href: demoRoutes.display,
+    icon: Monitor,
   },
 ];
 
 export default function Home() {
   return (
     <>
-      <main id="main-content" className="page-shell">
-        <section className="hero" aria-labelledby="home-title">
+      <main id="main-content" className="page-shell home-page">
+        <section className="hero home-hero" aria-labelledby="home-title">
           <div className="hero-copy">
             <p className="eyebrow">Real-time queue management</p>
             <h1 id="home-title" className="display-type">
@@ -48,11 +61,37 @@ export default function Home() {
               </Link>
             </div>
           </div>
-          <LandingQueuePreview />
+          <div className="home-product-preview">
+            <LandingQueuePreview />
+            <ol className="surface-list home-surface-list">
+              {surfaces.map(({ icon: Icon, ...surface }, index) => (
+                <li key={surface.href}>
+                  <Link className="surface-row" href={surface.href}>
+                    <span className="surface-index">{index + 1}</span>
+                    <Icon aria-hidden="true" />
+                    <h3>{surface.title.replace(' check-in', '')}</h3>
+                    <ArrowRight aria-hidden="true" size={20} />
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        <section className="home-signal-band" aria-label="Product summary">
+          <Info aria-hidden="true" />
+          <div>
+            <h2>One queue. Everywhere.</h2>
+            <p>
+              Customer, staff, and display update from the same live queue
+              state.
+            </p>
+          </div>
+          <Store aria-hidden="true" className="home-store-icon" />
         </section>
 
         <section
-          className="section"
+          className="section home-detail-section"
           id="how-it-works"
           aria-labelledby="surfaces-title"
         >
@@ -60,18 +99,16 @@ export default function Home() {
             <p className="eyebrow">One queue · Three views</p>
             <h2 id="surfaces-title">Everyone sees what matters now.</h2>
           </div>
-          <ol className="surface-list">
-            {surfaces.map((surface, index) => (
-              <li key={surface.href}>
-                <Link className="surface-row" href={surface.href}>
-                  <span className="surface-index">0{index + 1}</span>
-                  <h3>{surface.title}</h3>
-                  <p>{surface.description}</p>
-                  <ArrowRight aria-hidden="true" size={20} />
-                </Link>
-              </li>
+          <div className="surface-detail-grid">
+            {surfaces.map(({ icon: Icon, ...surface }, index) => (
+              <article key={surface.href}>
+                <span className="surface-index">0{index + 1}</span>
+                <Icon aria-hidden="true" />
+                <h3>{surface.title}</h3>
+                <p>{surface.description}</p>
+              </article>
             ))}
-          </ol>
+          </div>
         </section>
 
         <section className="section" aria-labelledby="principles-title">

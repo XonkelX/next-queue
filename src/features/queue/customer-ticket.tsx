@@ -59,11 +59,11 @@ export function CustomerTicket({
     ? 'It’s your turn.'
     : ownEntry
       ? 'Stay nearby — this page updates automatically.'
-      : 'Join once and keep this page open for live progress.';
+      : 'Your name is optional and never shown to other guests.';
 
   return (
     <div
-      className="ticket-experience"
+      className={`ticket-experience ${ownEntry ? 'ticket-issued' : 'ticket-unissued'}`}
       role="region"
       aria-label="Keep your place. Keep your day."
     >

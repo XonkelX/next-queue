@@ -62,7 +62,7 @@ export function CreateQueuePanel() {
   return (
     <section className="setup-panel" aria-labelledby="create-queue-title">
       <p className="eyebrow">Persistent setup</p>
-      <h2 id="create-queue-title">Create a queue for this test.</h2>
+      <h2 id="create-queue-title">Create a queue.</h2>
       <form className="setup-form" onSubmit={create} aria-busy={pending}>
         <label className="field-label" htmlFor="queue-name">
           Queue name
@@ -123,17 +123,27 @@ export function CreateQueuePanel() {
             Copy code
           </button>
           <p className="field-hint">
-            Queue slug: <code>{created.slug}</code>
+            Queue slug: <code>{created.slug}</code>. This staff code only works
+            with this queue.
           </p>
-          <div className="hero-actions">
-            <Link className="text-link" href={`/q/${created.slug}`}>
-              Customer view
+          <div className="created-queue-actions">
+            <Link
+              className="button button-accent"
+              href={`/q/${created.slug}/staff`}
+            >
+              Open your staff board
             </Link>
-            <Link className="text-link" href={`/q/${created.slug}/staff`}>
-              Staff view
+            <Link
+              className="button button-secondary"
+              href={`/q/${created.slug}`}
+            >
+              Open your customer view
             </Link>
-            <Link className="text-link" href={`/q/${created.slug}/display`}>
-              Public display
+            <Link
+              className="button button-secondary"
+              href={`/q/${created.slug}/display`}
+            >
+              Open your public display
             </Link>
           </div>
         </div>

@@ -23,12 +23,19 @@ export function SiteHeader() {
         href="/"
         aria-label={`${productConfig.name} home`}
       >
-        <span className="brand-mark" aria-hidden="true" />
-        {productConfig.name}
+        NEXT
       </Link>
       <nav className="desktop-nav" aria-label="Primary navigation">
         {links.map((link) => (
-          <Link href={link.href} key={link.href}>
+          <Link
+            href={link.href}
+            key={link.href}
+            aria-current={
+              link.href !== '/#how-it-works' && pathname === link.href
+                ? 'page'
+                : undefined
+            }
+          >
             {link.label}
           </Link>
         ))}

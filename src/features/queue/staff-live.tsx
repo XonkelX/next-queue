@@ -1,6 +1,14 @@
 'use client';
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import {
+  CheckCircle2,
+  Megaphone,
+  Pause,
+  Play,
+  SkipForward,
+  XCircle,
+} from 'lucide-react';
 import { FormEvent, useRef, useState } from 'react';
 import { AnimatedQueueNumber } from '@/components/animated-queue-number';
 import { InvalidQueue } from '@/components/invalid-queue';
@@ -9,6 +17,11 @@ import { QueueAdapterError } from '@/lib/realtime/errors';
 import { activeEntry, waitingEntries } from './transitions';
 import { useLiveQueue } from './use-live-queue';
 import type { QueueSnapshot } from './types';
+
+const joinedTime = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+});
 
 export function StaffLive({ slug }: { slug: string }) {
   const { adapter, snapshot, connection, error, commit, isNotFound } =
@@ -30,9 +43,14 @@ export function StaffLive({ slug }: { slug: string }) {
   async function claim(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!adapter) return;
+    const normalizedAccessCode = accessCode.trim().toUpperCase();
+    if (!normalizedAccessCode) {
+      setMessage('Enter the access code for this queue.');
+      return;
+    }
     setPending('claim');
     try {
-      const next = await adapter.claimStaffAccess(slug, accessCode);
+      const next = await adapter.claimStaffAccess(slug, normalizedAccessCode);
       setAccessCode('');
       commit(next);
       setMessage('Staff access confirmed.');
@@ -76,6 +94,8 @@ export function StaffLive({ slug }: { slug: string }) {
               id="staff-code"
               type="password"
               autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
               aria-describedby="staff-access-message"
               value={accessCode}
               onChange={(event) => setAccessCode(event.target.value)}
@@ -137,18 +157,89 @@ export function StaffLive({ slug }: { slug: string }) {
       />
       <div className="staff-layout">
         <section className="staff-active" aria-labelledby="active-title">
-          <div style={{ marginTop: 52 }}>
-            <p className="eyebrow">Now serving</p>
-            <h2 id="active-title">
-              {active?.displayName ??
-                (active ? 'Current customer' : 'No one yet')}
-            </h2>
+          <div className="staff-ticket-stub" aria-hidden="true">
+            <span>Now serving</span>
+            <span>↓</span>
           </div>
-          <AnimatedQueueNumber
-            className="staff-active-number"
-            number={active?.number}
-            prefix={snapshot.queue.prefix}
+          <div className="staff-ticket-body">
+            <div>
+              <p className="eyebrow">Now serving</p>
+              <h2 id="active-title">
+                {active?.displayName ??
+                  (active ? 'Current customer' : 'No one yet')}
+              </h2>
+            </div>
+            <AnimatedQueueNumber
+              className="staff-active-number"
+              number={active?.number}
+              prefix={snapshot.queue.prefix}
+            />
+          </div>
+          <span
+            className="staff-ticket-cut staff-ticket-cut-left"
+            aria-hidden
           />
+          <span
+            className="staff-ticket-cut staff-ticket-cut-right"
+            aria-hidden
+          />
+        </section>
+
+        <section className="waiting-panel" aria-labelledby="waiting-title">
+          <div className="waiting-heading">
+            <h2 id="waiting-title">Waiting</h2>
+            <span className="quiet-label">
+              {waiting.length} {waiting.length === 1 ? 'person' : 'people'}
+            </span>
+          </div>
+          {waiting.length ? (
+            <ol className="waiting-list">
+              <AnimatePresence initial={false}>
+                {waiting.map((entry) => (
+                  <motion.li
+                    className="waiting-entry"
+                    key={entry.id}
+                    layout={!reduced}
+                    initial={{ opacity: 0, y: reduced ? 0 : 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <span className="queue-number">{entry.numberLabel}</span>
+                    <span className="waiting-person">
+                      <strong>{entry.displayName ?? 'Guest'}</strong>
+                      <time dateTime={entry.joinedAt}>
+                        Joined {joinedTime.format(new Date(entry.joinedAt))}
+                      </time>
+                    </span>
+                    <button
+                      className="text-button waiting-skip"
+                      type="button"
+                      disabled={Boolean(pending)}
+                      aria-label={`Skip ${entry.numberLabel}`}
+                      onClick={() =>
+                        adapter &&
+                        void command(
+                          `skip-${entry.id}`,
+                          () => adapter.skipEntry(snapshot.queue.id, entry.id),
+                          `${entry.numberLabel} skipped.`,
+                        )
+                      }
+                    >
+                      <SkipForward aria-hidden="true" />
+                      Skip
+                    </button>
+                  </motion.li>
+                ))}
+              </AnimatePresence>
+            </ol>
+          ) : (
+            <p className="empty-state">
+              No customers waiting. New arrivals will appear here automatically.
+            </p>
+          )}
+        </section>
+
+        <footer className="staff-command-bar">
           <div className="staff-actions" aria-busy={Boolean(pending)}>
             {active ? (
               <>
@@ -165,6 +256,7 @@ export function StaffLive({ slug }: { slug: string }) {
                     )
                   }
                 >
+                  <CheckCircle2 aria-hidden="true" />
                   Complete
                 </button>
                 <button
@@ -180,6 +272,7 @@ export function StaffLive({ slug }: { slug: string }) {
                     )
                   }
                 >
+                  <SkipForward aria-hidden="true" />
                   Skip
                 </button>
               </>
@@ -201,6 +294,7 @@ export function StaffLive({ slug }: { slug: string }) {
                   )
                 }
               >
+                <Megaphone aria-hidden="true" />
                 Call next
               </button>
             )}
@@ -218,6 +312,7 @@ export function StaffLive({ slug }: { slug: string }) {
                   )
                 }
               >
+                <Pause aria-hidden="true" />
                 Pause queue
               </button>
             )}
@@ -235,6 +330,7 @@ export function StaffLive({ slug }: { slug: string }) {
                   )
                 }
               >
+                <Play aria-hidden="true" />
                 Open queue
               </button>
             )}
@@ -252,6 +348,7 @@ export function StaffLive({ slug }: { slug: string }) {
                   )
                 }
               >
+                <XCircle aria-hidden="true" />
                 Close queue
               </button>
             )}
@@ -265,54 +362,7 @@ export function StaffLive({ slug }: { slug: string }) {
           >
             {pending ? 'Updating the queue…' : message}
           </p>
-        </section>
-        <section className="waiting-panel" aria-labelledby="waiting-title">
-          <div className="waiting-heading">
-            <h2 id="waiting-title">Waiting</h2>
-            <span className="quiet-label">
-              {waiting.length} {waiting.length === 1 ? 'person' : 'people'}
-            </span>
-          </div>
-          {waiting.length ? (
-            <ol className="waiting-list">
-              <AnimatePresence initial={false}>
-                {waiting.map((entry) => (
-                  <motion.li
-                    className="waiting-entry"
-                    key={entry.id}
-                    layout={!reduced}
-                    initial={{ opacity: 0, y: reduced ? 0 : 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, height: 0 }}
-                  >
-                    <span className="queue-number">{entry.numberLabel}</span>
-                    <span>{entry.displayName ?? 'Guest'}</span>
-                    <button
-                      className="text-button"
-                      type="button"
-                      disabled={Boolean(pending)}
-                      aria-label={`Skip ${entry.numberLabel}`}
-                      onClick={() =>
-                        adapter &&
-                        void command(
-                          `skip-${entry.id}`,
-                          () => adapter.skipEntry(snapshot.queue.id, entry.id),
-                          `${entry.numberLabel} skipped.`,
-                        )
-                      }
-                    >
-                      Skip
-                    </button>
-                  </motion.li>
-                ))}
-              </AnimatePresence>
-            </ol>
-          ) : (
-            <p className="empty-state">
-              No customers waiting. New arrivals will appear here automatically.
-            </p>
-          )}
-        </section>
+        </footer>
       </div>
     </div>
   );

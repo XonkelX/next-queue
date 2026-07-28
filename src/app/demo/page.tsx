@@ -1,4 +1,12 @@
-import { ArrowRight, Monitor, Smartphone, Users } from 'lucide-react';
+import {
+  ArrowRight,
+  Eye,
+  Monitor,
+  ShieldCheck,
+  Smartphone,
+  Users,
+  Wifi,
+} from 'lucide-react';
 import Link from 'next/link';
 import { demoRoutes } from '@/config/product';
 import { CreateQueuePanel } from '@/features/queue/create-queue-panel';
@@ -7,21 +15,21 @@ export const dynamic = 'force-dynamic';
 
 const demos = [
   {
-    title: 'Customer',
-    description: 'Join the queue and see a personal ticket and position.',
+    title: 'Sample customer',
+    description: 'Join the seeded sample queue and see a personal ticket.',
     href: demoRoutes.customer,
     icon: Smartphone,
   },
   {
-    title: 'Staff',
+    title: 'Sample staff',
     description:
-      'Claim access, then call, complete, skip, pause, reopen, or close.',
+      'Open the seeded sample staff board. Custom queue codes do not work here.',
     href: demoRoutes.staff,
     icon: Users,
   },
   {
-    title: 'Display',
-    description: 'View the distance-readable public service board.',
+    title: 'Sample display',
+    description: 'View the seeded sample queue on the public service board.',
     href: demoRoutes.display,
     icon: Monitor,
   },
@@ -29,25 +37,17 @@ const demos = [
 
 export default function DemoPage() {
   return (
-    <main id="main-content" className="page-shell">
+    <main id="main-content" className="page-shell demo-page">
       <div className="demo-intro">
-        <p className="eyebrow">Story 2 persistent prototype</p>
+        <p className="eyebrow">Live product demo</p>
         <h1>See the queue from every side.</h1>
         <p className="lede">
-          Create a persistent queue, then open each synchronized surface in a
-          separate browser context.
+          Explore the seeded sample below, or create your own queue and use the
+          links shown with its private staff code.
         </p>
       </div>
-      <aside className="demo-note">
-        <span aria-hidden="true">↗</span>
-        <span>
-          Open staff, customer, and display views separately. PostgreSQL is
-          authoritative; Realtime invalidates each client and a fresh revisioned
-          snapshot converges the interface.
-        </span>
-      </aside>
       <CreateQueuePanel />
-      <div className="demo-grid">
+      <div className="demo-grid" aria-label="Seeded sample queue views">
         {demos.map(({ title, description, href, icon: Icon }) => (
           <Link className="demo-card" href={href} key={href}>
             <span className="demo-card-icon">
@@ -66,6 +66,29 @@ export default function DemoPage() {
           </Link>
         ))}
       </div>
+      <aside className="demo-note" aria-label="Demo principles">
+        <div className="demo-proof">
+          <Wifi aria-hidden="true" />
+          <span>
+            <strong>See it in real time</strong>
+            Customer, staff, and display stay synchronized.
+          </span>
+        </div>
+        <div className="demo-proof">
+          <ShieldCheck aria-hidden="true" />
+          <span>
+            <strong>Private by design</strong>
+            No account, phone number, tracking, or advertising.
+          </span>
+        </div>
+        <div className="demo-proof">
+          <Eye aria-hidden="true" />
+          <span>
+            <strong>Use the right queue</strong>
+            Custom queue buttons appear beside its one-time code.
+          </span>
+        </div>
+      </aside>
     </main>
   );
 }

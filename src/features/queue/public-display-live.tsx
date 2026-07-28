@@ -40,7 +40,8 @@ export function PublicDisplayLive({ slug }: { slug: string }) {
       <div className="display-board">
         <section className="display-active" aria-labelledby="now-serving-label">
           <div className="display-ticket-stub" id="now-serving-label">
-            Now serving <span aria-hidden="true">→</span>
+            <span>Now serving</span>
+            <span aria-hidden="true">→</span>
           </div>
           <AnimatedQueueNumber
             className="display-active-number"
