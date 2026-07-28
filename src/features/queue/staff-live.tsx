@@ -125,6 +125,7 @@ export function StaffLive({ slug }: { slug: string }) {
 
   const active = activeEntry(snapshot.entries);
   const waiting = waitingEntries(snapshot.entries);
+  const currentSnapshot = snapshot;
 
   async function command(
     label: string,
@@ -135,6 +136,37 @@ export function StaffLive({ slug }: { slug: string }) {
     try {
       commit(await action());
       setMessage(success);
+      requestAnimationFrame(() => messageRef.current?.focus());
+    } catch (nextError) {
+      setMessage(
+        nextError instanceof QueueAdapterError
+          ? nextError.message
+          : 'The queue could not be updated.',
+      );
+    } finally {
+      setPending('');
+    }
+  }
+
+  async function completeServing() {
+    if (!adapter || !active) return;
+    const callNext =
+      currentSnapshot.queue.status === 'OPEN' && waiting.length > 0;
+    setPending('complete');
+    try {
+      const completed = await adapter.completeCurrent(currentSnapshot.queue.id);
+      commit(completed);
+
+      if (callNext) {
+        const next = await adapter.callNext(currentSnapshot.queue.id);
+        const nextActive = activeEntry(next.entries);
+        commit(next);
+        setMessage(
+          `${active.numberLabel} completed. ${nextActive?.numberLabel ?? 'Next customer'} called next.`,
+        );
+      } else {
+        setMessage(`${active.numberLabel} completed.`);
+      }
       requestAnimationFrame(() => messageRef.current?.focus());
     } catch (nextError) {
       setMessage(
@@ -244,23 +276,18 @@ export function StaffLive({ slug }: { slug: string }) {
             {active ? (
               <>
                 <button
-                  className="button button-accent"
+                  className="button button-accent staff-primary-action"
                   type="button"
                   disabled={Boolean(pending)}
-                  onClick={() =>
-                    adapter &&
-                    void command(
-                      'complete',
-                      () => adapter.completeCurrent(snapshot.queue.id),
-                      `${active.numberLabel} completed.`,
-                    )
-                  }
+                  onClick={() => void completeServing()}
                 >
                   <CheckCircle2 aria-hidden="true" />
-                  Complete
+                  {snapshot.queue.status === 'OPEN' && waiting.length
+                    ? 'Complete & call next'
+                    : 'Complete'}
                 </button>
                 <button
-                  className="button button-secondary"
+                  className="button button-secondary staff-secondary-action"
                   type="button"
                   disabled={Boolean(pending)}
                   onClick={() =>
@@ -278,7 +305,7 @@ export function StaffLive({ slug }: { slug: string }) {
               </>
             ) : (
               <button
-                className="button button-accent"
+                className="button button-accent staff-primary-action"
                 type="button"
                 disabled={
                   Boolean(pending) ||
@@ -300,7 +327,7 @@ export function StaffLive({ slug }: { slug: string }) {
             )}
             {snapshot.queue.status === 'OPEN' && (
               <button
-                className="button button-secondary"
+                className="button button-secondary staff-secondary-action"
                 type="button"
                 disabled={Boolean(pending)}
                 onClick={() =>
@@ -318,7 +345,7 @@ export function StaffLive({ slug }: { slug: string }) {
             )}
             {snapshot.queue.status === 'PAUSED' && (
               <button
-                className="button button-secondary"
+                className="button button-secondary staff-secondary-action"
                 type="button"
                 disabled={Boolean(pending)}
                 onClick={() =>
@@ -336,7 +363,7 @@ export function StaffLive({ slug }: { slug: string }) {
             )}
             {snapshot.queue.status !== 'CLOSED' && (
               <button
-                className="text-button"
+                className="text-button staff-close-action"
                 type="button"
                 disabled={Boolean(pending)}
                 onClick={() =>

@@ -105,7 +105,7 @@ export function CustomerTicket({
             </span>
             <small>
               {ownEntry && position
-                ? `${position} of ${waitingCount}`
+                ? `Your position: ${position} of ${waitingCount}`
                 : 'Your position'}
             </small>
           </div>

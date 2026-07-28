@@ -1030,7 +1030,9 @@ body {
 .ticket-stats {
   grid-area: stats;
   display: grid;
-  grid-auto-rows: minmax(112px, 1fr);
+  grid-template-rows:
+    minmax(138px, 1.2fr) minmax(138px, 1.2fr) minmax(96px, 0.78fr)
+    minmax(76px, 0.62fr);
   border-left: var(--border);
 }
 
@@ -1052,6 +1054,20 @@ body {
   color: var(--accent);
   font-size: clamp(3.8rem, 6vw, 6.8rem);
   letter-spacing: -0.035em;
+}
+
+.ticket-stat-position small {
+  font-weight: 800;
+}
+
+.ticket-stat-live {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.ticket-stat-live svg {
+  width: 18px;
+  height: 18px;
 }
 
 .ticket-progress {
@@ -1399,6 +1415,20 @@ body {
   border-color: var(--ticket-paper);
 }
 
+.staff-command-bar .staff-primary-action {
+  min-width: 270px;
+  font-size: 1.05rem;
+}
+
+.staff-command-bar .staff-secondary-action {
+  border-color: rgb(255 248 234 / 55%);
+  color: rgb(255 248 234 / 78%);
+}
+
+.staff-command-bar .staff-close-action {
+  color: rgb(255 248 234 / 68%);
+}
+
 .staff-command-bar .text-button {
   display: inline-flex;
   align-items: center;
@@ -1443,16 +1473,19 @@ body {
 /* Public display */
 
 .display-page {
-  width: 100%;
-  min-height: 100svh;
+  width: 100vw;
+  height: 100svh;
+  min-height: 0;
   margin: 0;
   padding: 0;
+  overflow: hidden;
   border: var(--border);
   background: var(--paper);
 }
 
 .display-top {
-  min-height: 142px;
+  height: 140px;
+  min-height: 140px;
   padding: 0 34px;
   border-bottom: var(--border);
 }
@@ -1476,10 +1509,11 @@ body {
 }
 
 .display-board {
-  min-height: calc(100svh - 142px);
+  height: calc(100svh - 142px);
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 2.35fr) minmax(350px, 0.95fr);
-  grid-template-rows: minmax(390px, 1fr) auto minmax(148px, auto);
+  grid-template-rows: minmax(0, 1fr) 160px 154px;
   grid-template-areas:
     'active rail'
     'next next'
@@ -1537,7 +1571,7 @@ body {
 
 .display-up-next {
   grid-area: next;
-  min-height: 170px;
+  min-height: 0;
   display: grid;
   grid-template-columns: 160px 1fr;
   padding: 0;
@@ -1571,7 +1605,7 @@ body {
 
 .display-guidance {
   grid-area: guide;
-  min-height: 154px;
+  min-height: 0;
   padding: 28px 50px;
   background: var(--signal-blue);
   color: #fff8ea;
@@ -1870,7 +1904,10 @@ body {
 
   .display-page {
     width: calc(100vw - 16px);
+    height: auto;
+    min-height: calc(100svh - 16px);
     margin: 8px;
+    overflow: visible;
   }
 
   .display-top {
@@ -1883,6 +1920,7 @@ body {
   }
 
   .display-board {
+    height: auto;
     display: flex;
     flex-direction: column;
   }

@@ -40,6 +40,37 @@ export function StaffPrototype({
     }
   }
 
+  function completeServing() {
+    if (!active) return;
+    const completedLabel = formatQueueNumber(
+      active.number,
+      snapshot.queue.prefix,
+    );
+    const callNext = snapshot.queue.status === 'OPEN' && waiting.length > 0;
+
+    try {
+      setSnapshot((current) => {
+        const completed = applyQueueCommand(current, {
+          type: 'COMPLETE_ACTIVE',
+        });
+        return callNext
+          ? applyQueueCommand(completed, { type: 'CALL_NEXT' })
+          : completed;
+      });
+      setMessage(
+        callNext
+          ? `${completedLabel} completed. Next customer called.`
+          : `${completedLabel} completed.`,
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof QueueTransitionError
+          ? error.message
+          : 'The queue could not be updated.',
+      );
+    }
+  }
+
   const toggleStatus = () => {
     const opening = snapshot.queue.status !== 'OPEN';
     run(
@@ -74,19 +105,16 @@ export function StaffPrototype({
             {active ? (
               <>
                 <button
-                  className="button button-accent"
+                  className="button button-accent staff-primary-action"
                   type="button"
-                  onClick={() =>
-                    run(
-                      { type: 'COMPLETE_ACTIVE' },
-                      `${formatQueueNumber(active.number, snapshot.queue.prefix)} completed.`,
-                    )
-                  }
+                  onClick={completeServing}
                 >
-                  Complete
+                  {snapshot.queue.status === 'OPEN' && waiting.length
+                    ? 'Complete & call next'
+                    : 'Complete'}
                 </button>
                 <button
-                  className="button button-secondary"
+                  className="button button-secondary staff-secondary-action"
                   type="button"
                   onClick={() =>
                     run(
@@ -100,7 +128,7 @@ export function StaffPrototype({
               </>
             ) : (
               <button
-                className="button button-accent"
+                className="button button-accent staff-primary-action"
                 type="button"
                 disabled={!waiting.length || snapshot.queue.status !== 'OPEN'}
                 onClick={() =>
@@ -111,7 +139,7 @@ export function StaffPrototype({
               </button>
             )}
             <button
-              className="button button-secondary"
+              className="button button-secondary staff-secondary-action"
               type="button"
               onClick={toggleStatus}
             >

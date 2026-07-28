@@ -20,7 +20,7 @@ export function LandingQueuePreview() {
   return (
     <div className="queue-preview" aria-label="Animated public display preview">
       <div className="preview-topline">
-        <span>North Star Coffee</span>
+        <span>North Star Café</span>
         <span>Queue open</span>
       </div>
       <div>
