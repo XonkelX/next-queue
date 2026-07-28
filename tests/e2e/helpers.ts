@@ -24,7 +24,9 @@ export async function claimStaff(browser: Browser, slug: string, code: string) {
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.goto(`/q/${slug}/staff`);
-  await page.getByLabel('Private access code').fill(code);
+  await page
+    .getByLabel('Private access code')
+    .fill(`  ${code.toLowerCase()}  `);
   await page.getByRole('button', { name: 'Open staff board' }).click();
   await expect(page.getByRole('heading', { name: 'Waiting' })).toBeVisible();
   return { context, page };

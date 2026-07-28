@@ -62,10 +62,8 @@ function fakeClient(revisions: number[]) {
   }));
   const client = {
     auth: {
-      getSession: vi.fn(async () => ({
-        data: {
-          session: { user: { id: '51000000-0000-4000-8000-000000000001' } },
-        },
+      getUser: vi.fn(async () => ({
+        data: { user: { id: '51000000-0000-4000-8000-000000000001' } },
         error: null,
       })),
       signInAnonymously: vi.fn(),

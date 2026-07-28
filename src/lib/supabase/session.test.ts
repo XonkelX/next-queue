@@ -13,9 +13,9 @@ function client(existing = false) {
   const user = { id: '60000000-0000-4000-8000-000000000001' };
   const value = {
     auth: {
-      getSession: vi.fn(async () => ({
-        data: { session: existing ? { user } : null },
-        error: null,
+      getUser: vi.fn(async () => ({
+        data: { user: existing ? user : null },
+        error: existing ? null : { message: 'session missing' },
       })),
       signInAnonymously: vi.fn(async () => ({ data: { user }, error: null })),
     },
@@ -39,6 +39,21 @@ describe('ensureAnonymousSession', () => {
       ensureAnonymousSession(fake.typed),
     ]);
     expect(first.id).toBe(second.id);
+    expect(fake.value.auth.signInAnonymously).toHaveBeenCalledTimes(1);
+  });
+
+  it('revalidates a resolved session before the next operation', async () => {
+    const fake = client(true);
+    await ensureAnonymousSession(fake.typed);
+    fake.value.auth.getUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: { message: 'session missing' },
+    });
+
+    await expect(ensureAnonymousSession(fake.typed)).resolves.toMatchObject({
+      id: expect.any(String),
+    });
+    expect(fake.value.auth.getUser).toHaveBeenCalledTimes(2);
     expect(fake.value.auth.signInAnonymously).toHaveBeenCalledTimes(1);
   });
 

@@ -18,22 +18,25 @@ export function ensureAnonymousSession(
 ): Promise<User> {
   if (pendingSession) return pendingSession;
 
-  pendingSession = (async () => {
-    const { data: sessionData, error: sessionError } =
-      await client.auth.getSession();
-    if (sessionError) throw new AnonymousSessionError();
-    if (sessionData.session?.user) return sessionData.session.user;
+  const initialization = (async () => {
+    const { data: userData, error: userError } = await client.auth.getUser();
+    if (!userError && userData.user) return userData.user;
 
     const { data, error } = await client.auth.signInAnonymously();
     if (error || !data.user) throw new AnonymousSessionError();
     return data.user;
   })().catch((error: unknown) => {
-    pendingSession = undefined;
     if (error instanceof AnonymousSessionError) throw error;
     throw new AnonymousSessionError();
   });
 
-  return pendingSession;
+  pendingSession = initialization;
+  void initialization.then(clearPendingSession, clearPendingSession);
+  return initialization;
+}
+
+function clearPendingSession() {
+  pendingSession = undefined;
 }
 
 export function resetAnonymousSessionForTests() {
