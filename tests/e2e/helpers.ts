@@ -9,9 +9,9 @@ export async function createTestQueue(
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.goto('/demo');
-  await page.getByLabel('Queue name').fill(name);
-  await page.getByLabel('Number prefix').fill(prefix);
-  await page.getByRole('button', { name: 'Create persistent queue' }).click();
+  await page.getByLabel('Venue or queue name').fill(name);
+  await page.getByLabel('Ticket prefix').fill(prefix);
+  await page.getByRole('button', { name: 'Create my queue' }).click();
   const codeField = page.getByLabel('One-time staff access code');
   await expect(codeField).toBeVisible();
   const code = await codeField.inputValue();
@@ -24,7 +24,9 @@ export async function claimStaff(browser: Browser, slug: string, code: string) {
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.goto(`/q/${slug}/staff`);
-  await page.getByLabel('Private access code').fill(code);
+  await page
+    .getByLabel('Private access code')
+    .fill(`  ${code.toLowerCase()}  `);
   await page.getByRole('button', { name: 'Open staff board' }).click();
   await expect(page.getByRole('heading', { name: 'Waiting' })).toBeVisible();
   return { context, page };

@@ -24,24 +24,19 @@ test('customer, staff, and display converge without refresh and resync after off
   await expect(created.page.getByText('River')).toBeVisible();
   await expect(created.page.getByText('Sky')).toBeVisible();
   await expect(display.getByText('R-001')).toBeVisible();
-  await expect(second.page.getByText('2 of 2')).toBeVisible();
+  await expect(second.page.getByText('Your position: 2 of 2')).toBeVisible();
 
   await created.page.getByRole('button', { name: 'Call next' }).click();
   await expect(first.page.getByText('It’s your turn.')).toBeVisible();
   await expect(display.getByLabel('Queue number R-001')).toBeVisible();
-  await expect(second.page.getByText('1 of 1')).toBeVisible();
-
-  await created.page.getByRole('button', { name: 'Complete' }).click();
-  await expect(
-    display.getByText('No one is currently being served'),
-  ).toBeAttached();
-  await expect(
-    created.page.getByRole('button', { name: 'Call next' }),
-  ).toBeEnabled();
+  await expect(second.page.getByText('Your position: 1 of 1')).toBeVisible();
 
   await second.context.setOffline(true);
   await expect(second.page.getByText('Offline')).toBeVisible();
-  await created.page.getByRole('button', { name: 'Call next' }).click();
+  await created.page
+    .getByRole('button', { name: 'Complete & call next' })
+    .click();
+  await expect(display.getByLabel('Queue number R-002')).toBeVisible();
   await second.context.setOffline(false);
   await expect(second.page.getByText('It’s your turn.')).toBeVisible();
   await expect(

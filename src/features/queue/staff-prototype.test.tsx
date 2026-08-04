@@ -7,9 +7,9 @@ describe('StaffPrototype', () => {
   it('completes the active customer and calls the next waiting number', async () => {
     const user = userEvent.setup();
     render(<StaffPrototype />);
-    await user.click(screen.getByRole('button', { name: 'Complete' }));
-    expect(screen.getByRole('button', { name: 'Call next' })).toBeEnabled();
-    await user.click(screen.getByRole('button', { name: 'Call next' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Complete & call next' }),
+    );
     expect(screen.getByLabelText('Queue number A-025')).toBeInTheDocument();
   });
 

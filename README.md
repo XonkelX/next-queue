@@ -1,114 +1,234 @@
-# Next
+# Next — Real-Time Queue System
 
-> A calm, persistent real-time queue for small service teams.
+> A calm, persistent queue for small service teams, built as a production-ready portfolio project by Oniel Alejo Feliz.
 
-Next uses a transactional Supabase PostgreSQL engine. Anonymous browser identities can create or join queues; a one-time queue capability grants staff membership; customer, staff, and public-display clients converge through filtered Realtime invalidations followed by authoritative revisioned snapshots.
+[Live application](https://next-queue-omega.vercel.app) · [Try the demo](https://next-queue-omega.vercel.app/demo) · [Watch the 27-second demo](docs/assets/video/next-v1-demo.mp4) · [Read the v1.0 release notes](docs/releases/v1.0.0.md)
 
-The production application is live at [next-queue-omega.vercel.app](https://next-queue-omega.vercel.app). It runs on Vercel Hobby with one Supabase Free project in `us-east-1`; no paid service, trial, analytics, storage add-on, or custom domain is part of the deployment.
+![Next landing page](docs/assets/screenshots/landing-page.png)
 
-## Product surfaces
+## Product overview
 
-- `/demo` — create a persistent queue and receive its staff code once
-- `/q/[slug]` — customer check-in, number, position, and service state
-- `/q/[slug]/staff` — capability claim and authorized queue commands
-- `/q/[slug]/display` — public-safe current and upcoming numbers
-- `/` and `/about` — product and project context
+Next gives customers, staff, and a public display one synchronized answer to three questions: who is waiting, who is being served, and who is next. It replaces paper lists and shouted names with an intentionally small workflow that works without permanent accounts, contact details, tracking, or paid infrastructure.
 
-## Identity and privacy
+The v1.0 product includes:
 
-Supabase anonymous sign-in creates a unique user UUID without email, phone, password, social identity, address, or demographics. That user uses PostgreSQL's `authenticated` role; it is different from the public publishable key and the unauthenticated `anon` database role. The session is cookie-backed through `@supabase/ssr` and normally survives refreshes and same-profile tabs. Clearing site data, using another device, or signing out loses the anonymous identity.
+- anonymous queue creation with a one-time staff capability
+- customer check-in, stable queue number, position, and turn status
+- a staff board for call, complete, skip, pause, reopen, and close commands
+- a distance-readable public display containing queue numbers only
+- persistent PostgreSQL state and multi-client Realtime convergence
+- responsive light/dark presentation, reduced motion, and accessible status feedback
 
-Optional customer names live in `queue_entry_private`. Public Realtime tables and public snapshots contain number labels only. No tracking, analytics, advertising, or visitor profiling is installed.
+## Live demo
 
-## Local requirements
+Open the [production demo](https://next-queue-omega.vercel.app/demo), create a synthetic queue, and save the one-time staff code privately. The creator is authorized immediately. Open customer, staff, and display routes in separate tabs or browser profiles to see changes converge without refresh.
 
-- Node.js 22
-- npm
-- Docker Desktop or another Docker-compatible runtime with at least 7 GB available
+Use synthetic information only. An optional customer first name is visible only to authorized staff. Clearing browser data loses that anonymous identity, and a lost staff code cannot be recovered through the product.
+
+## Screenshots
+
+| Queue creation                                                           | Customer status                                                       |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| ![Create a persistent queue](docs/assets/screenshots/queue-creation.png) | ![Customer queue status](docs/assets/screenshots/customer-status.png) |
+
+| Staff board                                                                                 | Public display                                                                          |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| ![Staff queue board with a synthetic waiting list](docs/assets/screenshots/staff-board.png) | ![Public display showing the active number](docs/assets/screenshots/public-display.png) |
+
+| Mobile                                                                         | Dark theme                                                                 |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| ![Responsive customer view on mobile](docs/assets/screenshots/mobile-view.png) | ![Next landing page in dark theme](docs/assets/screenshots/dark-theme.png) |
+
+All portfolio media was captured from the final production build with a temporary synthetic queue. The queue, related rows, anonymous identities, and one-time capability were removed after capture.
+
+## Architecture
+
+Next.js serves the interface from Vercel. The browser uses only a Supabase project URL and publishable key; authorization and state transitions remain inside PostgreSQL.
+
+```mermaid
+flowchart LR
+  subgraph Clients["Browser clients"]
+    Customer["Customer"]
+    Staff["Staff"]
+    Display["Public display"]
+  end
+
+  Vercel["Vercel Hobby<br/>Next.js 16"]
+
+  subgraph Supabase["Supabase Free · us-east-1"]
+    Auth["Anonymous Auth"]
+    API["Data API + RPC"]
+    DB[("PostgreSQL<br/>RLS + constraints")]
+    RT["Filtered Realtime<br/>queues + queue_entries"]
+  end
+
+  Vercel -->|"serves UI"| Clients
+  Clients -->|"public configuration"| Auth
+  Clients -->|"authenticated commands / snapshots"| API
+  API --> DB
+  DB -->|"committed public changes"| RT
+  RT -->|"invalidation"| Clients
+```
+
+The database has eight application tables. Public state lives in `queues` and `queue_entries`; private names, ownership, staff membership, access hashes, rate-limit attempts, idempotency receipts, and events remain outside the Realtime publication. See the [data model](docs/architecture/data-model.md) and [architecture decision record](docs/architecture/adr-002-supabase-realtime.md).
+
+## Data flow
+
+Customer, staff, and display clients subscribe independently. Realtime messages are treated as invalidations, not authoritative state: every signal produces a fresh revisioned snapshot.
+
+```mermaid
+sequenceDiagram
+  participant Staff
+  participant RPC as PostgreSQL RPC
+  participant RT as Supabase Realtime
+  participant Customer
+  participant Display
+
+  Staff->>RPC: call_next(request_id)
+  activate RPC
+  RPC->>RPC: authorize, lock, transition, increment revision
+  RPC-->>Staff: authoritative snapshot
+  deactivate RPC
+  RPC-->>RT: committed queues / queue_entries changes
+  par Customer refreshes
+    RT-->>Customer: filtered invalidation
+    Customer->>RPC: get_queue_snapshot(slug)
+    RPC-->>Customer: latest revision
+  and Staff confirms
+    RT-->>Staff: filtered invalidation
+    Staff->>RPC: get_queue_snapshot(slug)
+    RPC-->>Staff: latest revision
+  and Display refreshes
+    RT-->>Display: filtered invalidation
+    Display->>RPC: get_public_queue_snapshot(slug)
+    RPC-->>Display: display-safe latest revision
+  end
+```
+
+## Database command flow
+
+Clients cannot write tables directly. Every mutation crosses an explicit security-definer RPC with a caller-generated request UUID.
+
+```mermaid
+flowchart TD
+  A["Client intent + request UUID"] --> B["Require auth.uid()"]
+  B --> C{"Authorized for command?"}
+  C -->|"No"| X["Typed safe error"]
+  C -->|"Yes"| D{"Receipt already exists?"}
+  D -->|"Same actor + command"| R["Return current authoritative snapshot"]
+  D -->|"Mismatched reuse"| X
+  D -->|"New request"| E["Lock queue / entry rows"]
+  E --> F["Validate domain transition"]
+  F --> G["Apply one atomic state change"]
+  G --> H["Increment monotonic queue revision"]
+  H --> I["Insert command receipt + append-only event"]
+  I --> J["Commit and return fresh snapshot"]
+```
+
+## Security and privacy
+
+- Supabase anonymous Auth creates a browser-scoped UUID without email, phone, password, or social identity.
+- The application runtime contains no service-role key, database password, or Supabase access token.
+- All eight public-schema tables have RLS; direct writes are revoked from browser roles.
+- Staff access is a queue-scoped capability. Only a `pgcrypto` hash is stored; the raw code is returned once and never enters a URL, event, log, seed, or Realtime payload.
+- Optional names live in `queue_entry_private`. Public snapshots and displays expose number labels only.
+- Failed staff claims are throttled per anonymous identity and queue. This is basic abuse resistance, not enterprise bot protection.
+- No analytics, advertising, uploads, contact collection, or visitor profiling is enabled.
+
+The full threat and authorization model is documented in [authorization and security](docs/security/authorization.md).
+
+## Concurrency and idempotency
+
+Commands execute in database transactions with queue/entry row locks. A partial unique index enforces at most one `SERVING` entry per queue, while unique `(queue_id, sequence)` and `(queue_id, number_label)` constraints prevent duplicate or reused numbers.
+
+Every intent receives a request UUID. Automatic retry reuses that UUID; the database records one command receipt, returns the existing result for a valid replay, and rejects mismatched reuse. Concurrent `call_next` requests therefore produce one winner and a typed conflict without violating the one-serving invariant.
+
+## Realtime synchronization
+
+Only display-safe `queues` and `queue_entries` rows are published. Each client subscribes with a queue-ID filter, debounces related transaction messages for 75 ms, fetches a full snapshot, and ignores stale revisions. A refresh already in flight queues at most one follow-up.
+
+Clients resynchronize after initial subscription, browser `online`, channel recovery, and a meaningful visibility return. The visible state returns to connected only after an authoritative refresh succeeds. Healthy clients do not poll. See the [Realtime protocol](docs/architecture/realtime-protocol.md).
+
+## Testing
+
+The release evidence contains 131 passing automated checks without double-counting the Realtime unit subset:
+
+| Layer                  | Passing checks | What it covers                                                                                          |
+| ---------------------- | -------------: | ------------------------------------------------------------------------------------------------------- |
+| Vitest unit/component  |             34 | transitions, UI behavior, session handling, revision convergence; includes 9 focused Realtime tests     |
+| pgTAP database         |             62 | RLS, grants, constraints, functions, privacy, publication, concurrency, idempotency                     |
+| Supabase integration   |             11 | persistent commands and authorization through the public client                                         |
+| Playwright application |             15 | end-to-end workflows and multi-client synchronization                                                   |
+| Production smoke       |              9 | public health, metadata, accessibility, console cleanliness, responsive overflow; remote-data read-only |
+
+CI runs formatting, lint, type generation/typecheck, unit tests, production build, dependency audit, a clean local Supabase migration replay, database lint, pgTAP, generated-type verification, integration tests, and browser tests.
+
+## Accessibility
+
+The interface uses semantic landmarks, one page heading, labeled forms, keyboard-reachable controls, visible focus, skip links, readable connection states, and status announcements. Queue state never relies on color alone. Automated Axe checks report zero serious or critical findings across public and application routes.
+
+Manual production QA covered keyboard-only navigation, focus retention during Realtime updates, 200% zoom, 320–1440 px layouts, a 1920×1080 public display, dark theme, and reduced motion. Details are in the [production validation report](docs/releases/story-3-production-validation.md).
+
+## Deployment
+
+- **Application:** Vercel Hobby, production branch `main`, Node.js 22.x
+- **Database/Auth/Realtime:** one Supabase Free project in `us-east-1`
+- **Canonical URL:** [next-queue-omega.vercel.app](https://next-queue-omega.vercel.app)
+- **Production browser variables:** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` only
+- **Migrations:** forward-only SQL in `supabase/migrations`, replayed from a clean database in CI
+
+No custom domain, paid analytics, paid storage, add-on, trial, payment method, or usage-based service is active.
+
+## Free-tier limitations
+
+This portfolio deployment has no commercial SLA. Supabase Free may pause an inactive project and both providers impose finite compute, database, bandwidth, build, function, and connection limits. The design is appropriate for small queues, not unbounded traffic or enterprise operations.
+
+Anonymous ownership is lost when browser data is cleared. A lost one-time staff code is unrecoverable without an already-authorized session. Automated anonymous-user retention, capability recovery/rotation, distributed rate limiting, monitoring, backups, and formal support are outside v1.0.
+
+## Local setup
+
+Requirements: Node.js 22, npm, and Docker Desktop (or a compatible Docker runtime with roughly 7 GB available).
 
 ```bash
+git clone https://github.com/XonkelX/next-queue.git
+cd next-queue
 npm install
 npm run db:start
 npm run db:reset
 ```
 
-Copy `.env.example` to `.env.local`, then use the local API URL and **publishable** key reported by the CLI. Do not place a secret/service-role key in the browser environment.
+Copy `.env.example` to `.env.local`, then use the local API URL and **publishable** key shown by `npm run db:status`. Never put a service-role key in a browser variable.
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000/demo](http://localhost:3000/demo). Create a queue, save the one-time staff code privately, then open the customer, staff, and display routes in separate browser contexts. The deterministic `north-star-cafe` seed is public-state visual data only and intentionally has no recoverable staff code; automated tests create isolated queues and consume their one-time code.
+Open [http://localhost:3000/demo](http://localhost:3000/demo). The deterministic `north-star-cafe` seed contains display-safe visual data and intentionally has no recoverable staff code.
 
-The local stack is development-only, uses default local credentials, and must not be exposed to public traffic.
-
-## Live demo
-
-Open the [production demo](https://next-queue-omega.vercel.app/demo), create a queue, and save the staff code when it appears: the raw code is shown once and cannot be recovered. The creator is immediately authorized. To test synchronization, open the customer, staff, and display links in separate tabs or isolated browser profiles. A second staff profile must claim access with the code. Queue state persists remotely, while staff membership and customer ownership follow each profile's anonymous session.
-
-Clearing site data, signing out, or changing browsers loses that anonymous identity. Losing both the creating staff session and the one-time code means staff access cannot be recovered through the product. Do not enter sensitive or regulated personal information; a display name is optional.
-
-## Commands
+Useful validation commands:
 
 ```bash
-npm run db:start
-npm run db:stop
-npm run db:status
-npm run db:reset
-npm run db:lint
-npm run db:test
-npm run db:types
-npm run db:types:check
-npm run test:integration
-npm run test:realtime
-npm run test:e2e
-npm run test:production
-npm run format
 npm run format:check
 npm run lint
 npm run typecheck
-npm run test
+npm test
 npm run build
 npm audit
 ```
 
-`npm run test:production` is a read-only smoke check against the public URL. Set `PRODUCTION_BASE_URL` to test another deployment. `PRODUCTION_QUEUE_SLUG` optionally adds HTTP health checks for an existing synthetic queue; browser checks remain on public pages so the suite never creates an anonymous identity or mutates remote records.
-
-`db:reset` drops only the local database, replays every migration, and reapplies safe seed data. `db:types` regenerates `src/lib/supabase/database.types.ts`; do not edit that file manually.
-
-## Command and authorization model
-
-Clients have no direct mutation grants. Explicit security-definer RPCs implement create, staff claim, join, call, complete, skip, pause, reopen, and close. Each validates `auth.uid()`, uses a fixed empty `search_path`, locks queue/entry rows, increments the queue revision once, records an idempotency receipt and append-only event, and returns a fresh snapshot. RLS separately limits table reads.
-
-One partial unique index permits at most one `SERVING` entry per queue. `(queue_id, sequence)` and `(queue_id, number_label)` are unique, queue numbers are never reused, and position is calculated from ordered waiting rows.
-
-## Realtime and reconnection
-
-Only `queues` and display-safe `queue_entries` are in `supabase_realtime`. Each surface subscribes with a queue-ID filter. A change is an invalidation signal: related messages are debounced for 75 ms, a snapshot RPC is fetched, stale revisions are ignored, and the new authoritative state replaces local state. The client resynchronizes after subscription, browser online, channel recovery, and a meaningful visibility return. Healthy connections do not poll.
-
-## Cost boundary
-
-Production uses one Supabase Free project and one Vercel Hobby project only: no card, trial, compute upgrade, paid backup, PITR, log drain, paid analytics, paid storage, support plan, custom domain, or usage-based add-on. Free projects have finite database, bandwidth, build, function, and connection quotas and Supabase may pause an inactive project. No keep-alive is used to evade pausing. Re-check provider limits before relying on the service.
-
-This portfolio deployment is provided as-is, without a commercial SLA. It has database-enforced authorization and basic access-attempt throttling, but not enterprise abuse protection, guaranteed recovery, or capacity for unbounded traffic.
-
-## Production deployment
-
-Vercel is connected to `XonkelX/next-queue`, uses `main` as the production branch, Node.js 22.x, and the standard Next.js build. Only these Production variables are configured:
-
-```text
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-```
-
-Deployments are produced by pushing reviewed commits to `main`; a manual equivalent is `npx vercel deploy --prod`. The browser uses only public Supabase configuration—never a service-role key or database password. See the [Story 3 production validation](docs/releases/story-3-production-validation.md) for the release evidence and remaining risks.
+Database and browser validation additionally use `npm run db:test`, `npm run test:integration`, and `npm run test:e2e`. `npm run db:reset` affects the local database only.
 
 ## Documentation
 
-- [ADR 002](docs/architecture/adr-002-supabase-realtime.md)
+- [Product scope](docs/product/scope.md)
 - [Data model](docs/architecture/data-model.md)
+- [Realtime architecture decision](docs/architecture/adr-002-supabase-realtime.md)
 - [Realtime protocol](docs/architecture/realtime-protocol.md)
 - [Authorization and security](docs/security/authorization.md)
 - [Motion system](docs/design/motion-system.md)
-- [Product scope](docs/product/scope.md)
-- [Story 3 production validation](docs/releases/story-3-production-validation.md)
+- [Production validation](docs/releases/story-3-production-validation.md)
+- [v1.0.0 release notes](docs/releases/v1.0.0.md)
+
+## License
+
+No open-source license has been granted. The repository is presented as a portfolio project; all rights are reserved by Oniel Alejo Feliz.

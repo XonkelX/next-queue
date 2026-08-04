@@ -1,6 +1,6 @@
 # Real-time architecture evaluation
 
-**Decision status:** proposed for Story 2
+**Decision status:** accepted and implemented in Story 2; production validated in Story 3
 
 **Last verified against official documentation:** 2026-07-17
 
@@ -33,7 +33,7 @@ Spike **Supabase Postgres + Realtime** behind `QueueRealtimeAdapter` in Story 2.
 5. Track a monotonic queue revision or `updated_at` plus stable event ordering so stale updates are discarded.
 6. Exercise concurrent `call next`, network interruption, background-tab reconnect, free-project wake behavior, and quota exhaustion before any deployment decision.
 
-Supabase is not installed and the adapter is not implemented in Story 1. This document is a recommendation, not a claim of production synchronization.
+At the Story 1 decision point, Supabase was not installed and the adapter was not implemented. Story 2 subsequently implemented this recommendation, and Story 3 validated it in production. The comparison remains as the decision record rather than current implementation guidance.
 
 ## Cost controls
 
@@ -47,7 +47,7 @@ Supabase is not installed and the adapter is not implemented in Story 1. This do
 ## Rejected assumptions and unresolved risks
 
 - Free tiers and beta capabilities change; the figures above are dated evidence, not a permanent guarantee.
-- Supabase hosted Free projects may have wake/suspension behavior that harms an always-ready service counter. Current behavior must be measured in the Story 2 spike.
+- Supabase hosted Free projects may have wake/suspension behavior that harms an always-ready service counter. Story 3 observed and documented the expected inactive-project pause and restore behavior.
 - Anonymous Version 1 staff control needs a safe capability model. With no authentication, a high-entropy staff capability or another narrow authorization scheme must prevent public clients from issuing staff commands without collecting personal data.
 - Postgres-change delivery is not itself a durable client event log. Reconnect must always resync a snapshot, and commands need idempotency keys.
 - The 200-connection free quota is sufficient for a portfolio demonstration and very small deployments, not broad production scale.

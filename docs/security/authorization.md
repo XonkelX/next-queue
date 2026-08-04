@@ -26,4 +26,4 @@ Every exposed function revokes public/`anon` execution and grants only `authenti
 
 ## Known limitations
 
-Anonymous identity cannot be recovered after site-data clearing or transferred automatically to another device. Automatic cleanup of abandoned anonymous Supabase users is not built in. Capability rotation/recovery, stronger abuse prevention, operational alerting, formal retention/deletion policy, penetration testing, and a production SLA are outside Story 2. This project claims no security certification.
+Anonymous identity cannot be recovered after site-data clearing or transferred automatically to another device. Automatic cleanup of abandoned anonymous Supabase users is not built in. Capability rotation/recovery, stronger abuse prevention, operational alerting, formal retention/deletion policy, penetration testing, and a production SLA are outside v1.0. This project claims no security certification.

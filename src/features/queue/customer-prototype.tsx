@@ -1,8 +1,7 @@
 'use client';
 
 import { FormEvent, useState, useSyncExternalStore } from 'react';
-import { AnimatedQueueNumber } from '@/components/animated-queue-number';
-import { QueueStatusLabel } from '@/components/queue-status';
+import { CustomerTicket } from './customer-ticket';
 import { formatQueueNumber } from './format';
 import { createInitialQueueSnapshot } from './mock-data';
 import { activeEntry, applyQueueCommand, waitingEntries } from './transitions';
@@ -71,100 +70,92 @@ export function CustomerPrototype({
     ? waiting.findIndex((entry) => entry.id === joinedEntry.id) + 1
     : 0;
 
-  return (
-    <div className="customer-layout">
-      <section className="customer-panel" aria-labelledby="join-title">
-        <p className="eyebrow">Join the queue</p>
-        <h2 id="join-title">Keep your place. Keep your day.</h2>
-        <p className="lede">
-          Add a first name if you like. Your queue number is all we need.
-        </p>
-        {snapshot.queue.status === 'OPEN' ? (
-          <form onSubmit={handleJoin}>
-            <label className="field-label" htmlFor="customer-name">
-              First name <span className="quiet-label">optional</span>
-            </label>
-            <input
-              className="text-input"
-              id="customer-name"
-              name="displayName"
-              autoComplete="given-name"
-              maxLength={30}
-              value={displayName}
-              onChange={(event) => setDisplayName(event.target.value)}
-              disabled={Boolean(joinedEntry)}
-            />
-            <p className="field-hint">
-              Only your first name is used on the staff view.
-            </p>
-            <button
-              className="button button-accent"
-              type="submit"
-              disabled={Boolean(joinedEntry)}
-            >
-              {joinedEntry ? 'You’re in the queue' : 'Join the queue'}
-            </button>
-          </form>
-        ) : (
-          <p className="notice" role="status">
-            {snapshot.queue.status === 'PAUSED'
-              ? 'Check-in is paused. Staff will reopen the queue shortly.'
-              : 'This queue is closed. Please check back during service hours.'}
-          </p>
-        )}
-        <p className="sr-only" aria-live="polite">
-          {message}
-        </p>
-      </section>
-
-      <section
-        className="customer-panel customer-status-panel"
-        aria-labelledby="your-place-title"
-      >
-        <div>
-          <QueueStatusLabel status={snapshot.queue.status} />
-          <p
-            className="quiet-label"
-            id="your-place-title"
-            style={{ marginTop: 42 }}
-          >
-            Your number
-          </p>
-          {joinedEntry ? (
-            <AnimatedQueueNumber
-              className="customer-ticket-number"
-              number={joinedEntry.number}
-              prefix={snapshot.queue.prefix}
-            />
-          ) : (
-            <span
-              className="queue-number customer-ticket-number"
-              aria-label="Not joined"
-            >
-              —
-            </span>
-          )}
-          <p>
-            {joinedEntry
-              ? 'We’ll keep your position in this browser session.'
-              : 'Join to receive your queue number.'}
-          </p>
-        </div>
-        <div className="position-line">
-          <span>
-            <span className="quiet-label">Now serving</span>
-            <br />
-            {active
-              ? formatQueueNumber(active.number, snapshot.queue.prefix)
-              : 'No one yet'}
-          </span>
-          <span>
-            <span className="quiet-label">Your position</span>
-            <br />
-            {joinedEntry ? `${position} of ${waiting.length}` : '—'}
-          </span>
-        </div>
-      </section>
+  const joinContent = joinedEntry ? (
+    <div className="ticket-saved-state" role="status">
+      <div>
+        <p className="eyebrow">Private by design</p>
+        <h2>Your place is saved.</h2>
+      </div>
+      <p>
+        This ticket belongs to this browser session. No account, email, or phone
+        number required.
+      </p>
+      <button className="button button-accent" type="button" disabled>
+        You’re in the queue
+      </button>
     </div>
+  ) : snapshot.queue.status === 'OPEN' ? (
+    <div className="ticket-join-copy">
+      <div>
+        <p className="eyebrow">Step into line</p>
+        <h2 id="join-title">Claim your ticket.</h2>
+        <p>Add a first name if you like. Your number is all we need.</p>
+      </div>
+      <div>
+        <form onSubmit={handleJoin}>
+          <label className="field-label" htmlFor="customer-name">
+            First name <span className="quiet-label">optional</span>
+          </label>
+          <input
+            className="text-input"
+            id="customer-name"
+            name="displayName"
+            autoComplete="given-name"
+            maxLength={30}
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+            disabled={Boolean(joinedEntry)}
+          />
+          <p className="field-hint">
+            Only your first name is used on the staff view.
+          </p>
+          <button
+            className="button button-accent"
+            type="submit"
+            disabled={Boolean(joinedEntry)}
+          >
+            {joinedEntry ? 'You’re in the queue' : 'Join the queue'}
+          </button>
+        </form>
+      </div>
+    </div>
+  ) : (
+    <div className="ticket-saved-state" role="status">
+      <div>
+        <p className="eyebrow">Check-in unavailable</p>
+        <h2>
+          {snapshot.queue.status === 'PAUSED'
+            ? 'The line is taking a breather.'
+            : 'Service has ended for now.'}
+        </h2>
+      </div>
+      <p>
+        {snapshot.queue.status === 'PAUSED'
+          ? 'Check-in is paused. Staff will reopen the queue shortly.'
+          : 'This queue is closed. Please check back during service hours.'}
+      </p>
+    </div>
+  );
+
+  return (
+    <>
+      <CustomerTicket
+        queueName={snapshot.queue.name}
+        queueStatus={snapshot.queue.status}
+        prefix={snapshot.queue.prefix}
+        ownEntry={joinedEntry}
+        activeLabel={
+          active ? formatQueueNumber(active.number, snapshot.queue.prefix) : '—'
+        }
+        position={position}
+        waitingCount={waiting.length}
+        connection="connected"
+        announceConnection={false}
+        joinContent={joinContent}
+      />
+      <p className="sr-only" aria-live="polite">
+        {message}
+      </p>
+    </>
   );
 }
