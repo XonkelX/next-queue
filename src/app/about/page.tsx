@@ -4,6 +4,7 @@ import {
   Network,
   ShieldCheck,
 } from 'lucide-react';
+import Image from 'next/image';
 import { SiteFooter } from '@/components/site-footer';
 import { productConfig } from '@/config/product';
 
@@ -51,6 +52,24 @@ export default function AboutPage() {
             and humane.
           </p>
         </div>
+        <section className="about-human-story" aria-labelledby="people-title">
+          <div className="about-human-media">
+            <Image
+              src="/images/lifestyle/cafe-owner.webp"
+              alt="A North Star Café team member beside the NEXT staff board while service continues behind her."
+              fill
+              sizes="(max-width: 820px) 100vw, 64vw"
+            />
+          </div>
+          <div className="about-human-copy">
+            <p className="eyebrow">Made for real service</p>
+            <h2 id="people-title">Technology should support the room.</h2>
+            <p>
+              NEXT keeps the operational work visible and the interface quiet,
+              so small teams can focus on the person in front of them.
+            </p>
+          </div>
+        </section>
         <div className="about-columns">
           {principles.map(
             ({ eyebrow, title, icon: Icon, description }, index) => (

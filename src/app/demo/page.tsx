@@ -2,11 +2,13 @@ import {
   ArrowRight,
   Eye,
   Monitor,
+  Radio,
   ShieldCheck,
   Smartphone,
   Users,
   Wifi,
 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { demoRoutes } from '@/config/product';
 import { CreateQueuePanel } from '@/features/queue/create-queue-panel';
@@ -15,21 +17,26 @@ export const dynamic = 'force-dynamic';
 
 const demos = [
   {
-    title: 'Sample customer',
+    index: '01',
+    title: 'Customer ticket',
     description: 'Join the seeded sample queue and see a personal ticket.',
+    action: 'Open customer view',
     href: demoRoutes.customer,
     icon: Smartphone,
   },
   {
-    title: 'Sample staff',
-    description:
-      'Open the seeded sample staff board. Custom queue codes do not work here.',
+    index: '02',
+    title: 'Staff board',
+    description: 'Call, complete, pause, and reopen the seeded sample queue.',
+    action: 'Open staff view',
     href: demoRoutes.staff,
     icon: Users,
   },
   {
-    title: 'Sample display',
+    index: '03',
+    title: 'Public display',
     description: 'View the seeded sample queue on the public service board.',
+    action: 'Open display view',
     href: demoRoutes.display,
     icon: Monitor,
   },
@@ -40,32 +47,53 @@ export default function DemoPage() {
     <main id="main-content" className="page-shell demo-page">
       <div className="demo-intro">
         <p className="eyebrow">Live product demo</p>
-        <h1>See the queue from every side.</h1>
+        <h1>One queue. Three points of view.</h1>
         <p className="lede">
-          Explore the seeded sample below, or create your own queue and use the
-          links shown with its private staff code.
+          Step into a working service flow as the customer, the team, or the
+          room—or issue a private queue of your own.
         </p>
       </div>
       <CreateQueuePanel />
-      <div className="demo-grid" aria-label="Seeded sample queue views">
-        {demos.map(({ title, description, href, icon: Icon }) => (
-          <Link className="demo-card" href={href} key={href}>
-            <span className="demo-card-icon">
-              <Icon aria-hidden="true" size={22} />
-            </span>
-            <h2>{title}</h2>
-            <p>{description}</p>
+      <section className="demo-showcase" aria-labelledby="sample-queue-title">
+        <div className="demo-showcase-media">
+          <Image
+            src="/images/lifestyle/staff-workflow.webp"
+            alt="Staff member using the Next queue board while serving a customer"
+            fill
+            priority
+            sizes="(max-width: 1100px) 100vw, 58vw"
+          />
+          <div className="demo-live-label">
+            <Radio aria-hidden="true" size={18} />
             <span>
-              Open view{' '}
-              <ArrowRight
-                aria-hidden="true"
-                size={17}
-                style={{ verticalAlign: 'middle', marginLeft: 6 }}
-              />
+              <strong id="sample-queue-title">North Star Café</strong>
+              Live sample queue
             </span>
-          </Link>
-        ))}
-      </div>
+          </div>
+        </div>
+        <div className="demo-grid" aria-label="Seeded sample queue views">
+          {demos.map(
+            ({ index, title, description, action, href, icon: Icon }) => (
+              <Link className="demo-card" href={href} key={href}>
+                <span className="demo-card-index" aria-hidden="true">
+                  {index}
+                </span>
+                <span className="demo-card-icon">
+                  <Icon aria-hidden="true" size={22} />
+                </span>
+                <div>
+                  <h2>{title}</h2>
+                  <p>{description}</p>
+                </div>
+                <span className="demo-card-action">
+                  {action}
+                  <ArrowRight aria-hidden="true" size={19} />
+                </span>
+              </Link>
+            ),
+          )}
+        </div>
+      </section>
       <aside className="demo-note" aria-label="Demo principles">
         <div className="demo-proof">
           <Wifi aria-hidden="true" />

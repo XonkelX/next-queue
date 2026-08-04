@@ -37,10 +37,10 @@ test('landing and demo routes communicate the persistent product', async ({
   await page.getByRole('link', { name: /open the demo/i }).click();
   await expect(page).toHaveURL(/\/demo$/);
   await expect(
-    page.getByRole('heading', { name: /every side/i }),
+    page.getByRole('heading', { name: /three points of view/i }),
   ).toBeVisible();
   await expect(
-    page.getByRole('heading', { name: /create a queue/i }),
+    page.getByRole('heading', { name: /issue your queue/i }),
   ).toBeVisible();
 });
 
@@ -77,7 +77,7 @@ test('theme switching applies the dark theme', async ({ page }) => {
 test('reduced motion keeps live content visible', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/q/north-star-cafe/display');
-  await expect(page.getByText('Queue is clear')).toBeVisible();
+  await expect(page.getByText('Queue is moving')).toBeVisible();
 });
 
 for (const width of [320, 375]) {

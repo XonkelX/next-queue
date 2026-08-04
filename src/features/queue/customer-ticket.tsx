@@ -5,12 +5,18 @@ import {
   Info,
   Megaphone,
   Radio,
+  Store,
   Users,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { AnimatedQueueNumber } from '@/components/animated-queue-number';
 import { QueueSurfaceHeader } from '@/components/queue-surface-header';
 import type { ConnectionState, QueueEntry, QueueStatus } from './types';
+
+const joinedTime = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+});
 
 export function CustomerTicket({
   queueName,
@@ -124,6 +130,14 @@ export function CustomerTicket({
             <Radio aria-hidden="true" />
             <span>{liveUpdateLabel[connection]}</span>
           </div>
+          <div className="ticket-stat ticket-stat-joined">
+            <Clock3 aria-hidden="true" />
+            <span>
+              {ownEntry
+                ? `Joined at ${joinedTime.format(new Date(ownEntry.joinedAt))}`
+                : 'Join time appears here'}
+            </span>
+          </div>
         </aside>
 
         <section className="ticket-progress" aria-label="Queue progress">
@@ -155,8 +169,11 @@ export function CustomerTicket({
         </section>
 
         <section className="ticket-guidance" aria-label="What to do next">
-          <Info aria-hidden="true" />
-          <p>{guidance}</p>
+          <div className="ticket-guidance-message">
+            <Info aria-hidden="true" />
+            <p>{guidance}</p>
+          </div>
+          <Store className="ticket-guidance-store" aria-hidden="true" />
         </section>
 
         <section className="ticket-join-area" aria-label="Queue check-in">

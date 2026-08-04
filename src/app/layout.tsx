@@ -1,9 +1,24 @@
 import type { Metadata } from 'next';
+import { Anton, Barlow_Condensed } from 'next/font/google';
 import { productConfig } from '@/config/product';
 import { SiteHeader } from '@/components/site-header';
 import { ThemeProvider } from '@/components/theme-provider';
 import './globals.css';
 import './ticket-theme.css';
+
+const anton = Anton({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-display',
+  display: 'swap',
+});
+
+const barlowCondensed = Barlow_Condensed({
+  weight: ['400', '500', '600', '700', '800', '900'],
+  subsets: ['latin'],
+  variable: '--font-interface',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(productConfig.siteUrl),
@@ -24,7 +39,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
+    <html
+      lang="en"
+      suppressHydrationWarning
+      data-scroll-behavior="smooth"
+      className={`${anton.variable} ${barlowCondensed.variable}`}
+    >
       <body>
         <a className="skip-link" href="#main-content">
           Skip to content

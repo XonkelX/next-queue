@@ -1,3 +1,4 @@
+import { BellRing } from 'lucide-react';
 import { AnimatedQueueNumber } from '@/components/animated-queue-number';
 import { ConnectionIndicator } from '@/components/connection-indicator';
 import { QueueStatusLabel } from '@/components/queue-status';
@@ -88,7 +89,7 @@ export function PublicDisplay({
           </div>
         </section>
         <section className="display-guidance">
-          <span aria-hidden="true">i</span>
+          <BellRing aria-hidden="true" />
           <strong>Please approach when your number is called.</strong>
         </section>
       </div>

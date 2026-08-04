@@ -10,6 +10,7 @@ import {
   Wifi,
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { LandingQueuePreview } from '@/components/landing-queue-preview';
 import { SiteFooter } from '@/components/site-footer';
 import { demoRoutes } from '@/config/product';
@@ -21,6 +22,9 @@ const surfaces = [
       'Join in seconds, then see your number and position without creating an account.',
     href: demoRoutes.customer,
     icon: UserRound,
+    image: '/images/lifestyle/wait-anywhere.webp',
+    imageAlt:
+      'A customer checking his place in line while waiting comfortably inside North Star Café.',
   },
   {
     title: 'Staff queue board',
@@ -28,6 +32,9 @@ const surfaces = [
       'One focused place to call, complete, skip, and pause the flow of service.',
     href: demoRoutes.staff,
     icon: Users,
+    image: '/images/lifestyle/staff-workflow.webp',
+    imageAlt:
+      'A café worker managing the NEXT staff board as a customer approaches the counter.',
   },
   {
     title: 'Public display',
@@ -35,6 +42,9 @@ const surfaces = [
       'A distance-readable view that makes the active number unmistakable.',
     href: demoRoutes.display,
     icon: Monitor,
+    image: '/images/lifestyle/public-display.webp',
+    imageAlt:
+      'The NEXT public queue display mounted above the service counter at North Star Café.',
   },
 ];
 
@@ -102,12 +112,53 @@ export default function Home() {
           <div className="surface-detail-grid">
             {surfaces.map(({ icon: Icon, ...surface }, index) => (
               <article key={surface.href}>
-                <span className="surface-index">0{index + 1}</span>
-                <Icon aria-hidden="true" />
-                <h3>{surface.title}</h3>
-                <p>{surface.description}</p>
+                <div className="surface-detail-media">
+                  <Image
+                    src={surface.image}
+                    alt={surface.imageAlt}
+                    fill
+                    sizes="(max-width: 820px) 100vw, 33vw"
+                  />
+                </div>
+                <div className="surface-detail-copy">
+                  <div className="surface-detail-heading">
+                    <span className="surface-index">0{index + 1}</span>
+                    <Icon aria-hidden="true" />
+                  </div>
+                  <h3>{surface.title}</h3>
+                  <p>{surface.description}</p>
+                  <Link className="surface-detail-link" href={surface.href}>
+                    Explore this view
+                    <ArrowRight aria-hidden="true" size={18} />
+                  </Link>
+                </div>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section className="home-outcome-story" aria-labelledby="outcome-title">
+          <div className="home-outcome-media">
+            <Image
+              src="/images/lifestyle/service-handoff.webp"
+              alt="A North Star Café worker handing a drink to a customer beneath the NEXT public display."
+              fill
+              sizes="(max-width: 820px) 100vw, 68vw"
+            />
+          </div>
+          <div className="home-outcome-copy">
+            <p className="eyebrow">From waiting to welcomed</p>
+            <h2 id="outcome-title">
+              A better handoff, not just a shorter line.
+            </h2>
+            <p>
+              Customers keep their time. Staff keep the room moving. The moment
+              of service stays human.
+            </p>
+            <Link className="button button-accent" href="/demo">
+              Experience the queue
+              <ArrowRight aria-hidden="true" size={18} />
+            </Link>
           </div>
         </section>
 
