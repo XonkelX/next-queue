@@ -1,6 +1,6 @@
 # Next — Real-Time Queue System
 
-> A calm, persistent queue for small service teams, built as a production-ready portfolio project by Oniel Alejo Feliz.
+> A calm, persistent queue for small service teams, built and deployed as a portfolio project by Oniel Alejo Feliz.
 
 [Live application](https://next-queue-omega.vercel.app) · [Try the demo](https://next-queue-omega.vercel.app/demo) · [Watch the 27-second demo](docs/assets/video/next-v1-demo.mp4) · [Read the v1.0 release notes](docs/releases/v1.0.0.md)
 
