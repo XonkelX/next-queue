@@ -1,6 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import type { CSSProperties } from 'react';
 import { formatQueueNumber } from '@/features/queue/format';
 import {
   getMotionDistance,
@@ -24,6 +25,7 @@ export function AnimatedQueueNumber({
   return (
     <span
       className={`queue-number ${className}`}
+      style={{ '--label-chars': Math.max(label.length, 5) } as CSSProperties}
       aria-label={number ? `Queue number ${label}` : 'No active number'}
     >
       <AnimatePresence mode="popLayout" initial={false}>

@@ -3,20 +3,19 @@
 import { BellRing } from 'lucide-react';
 import { AnimatedQueueNumber } from '@/components/animated-queue-number';
 import { ConnectionIndicator } from '@/components/connection-indicator';
+import { QueueRecovery, QueueSyncNotice } from '@/components/queue-recovery';
 import { InvalidQueue } from '@/components/invalid-queue';
 import { QueueStatusLabel } from '@/components/queue-status';
 import { activeEntry, waitingEntries } from './transitions';
 import { useLiveQueue } from './use-live-queue';
 
 export function PublicDisplayLive({ slug }: { slug: string }) {
-  const { snapshot, connection, error, isNotFound } = useLiveQueue(slug);
+  const { snapshot, connection, error, isNotFound, retry } = useLiveQueue(slug);
   if (isNotFound) return <InvalidQueue />;
   if (!snapshot)
     return (
       <main id="main-content" className="display-page">
-        <div className="live-loading" role="status">
-          {error?.message ?? 'Connecting to the queue…'}
-        </div>
+        <QueueRecovery error={error} retry={retry} />
       </main>
     );
   const active = activeEntry(snapshot.entries);
@@ -24,6 +23,7 @@ export function PublicDisplayLive({ slug }: { slug: string }) {
   const upcoming = waiting.slice(0, 3);
   return (
     <main id="main-content" className="display-page">
+      <QueueSyncNotice connection={connection} retry={retry} />
       <header className="display-top">
         <div className="display-identity">
           <strong className="queue-wordmark">NEXT</strong>

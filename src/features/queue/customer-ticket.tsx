@@ -41,13 +41,15 @@ export function CustomerTicket({
   announceConnection?: boolean;
   joinContent: ReactNode;
 }) {
-  const peopleAhead = ownEntry
-    ? ownEntry.status === 'SERVING'
-      ? 0
-      : Math.max(position - 1, 0)
-    : undefined;
-  const called =
-    ownEntry?.status === 'SERVING' || ownEntry?.status === 'COMPLETED';
+  const finished =
+    ownEntry?.status === 'COMPLETED' || ownEntry?.status === 'SKIPPED';
+  const peopleAhead =
+    ownEntry && !finished
+      ? ownEntry.status === 'SERVING'
+        ? 0
+        : Math.max(position - 1, 0)
+      : undefined;
+  const called = ownEntry?.status === 'SERVING';
   const queueMotion =
     queueStatus === 'OPEN'
       ? 'Queue is moving'
@@ -61,11 +63,17 @@ export function CustomerTicket({
     offline: 'Live updates interrupted',
     error: 'Live updates unavailable',
   };
-  const guidance = called
-    ? 'It’s your turn.'
-    : ownEntry
-      ? 'Stay nearby — this page updates automatically.'
-      : 'Your name is optional and never shown to other guests.';
+  const guidance = finished
+    ? ownEntry?.status === 'COMPLETED'
+      ? 'Your visit is complete. Thank you!'
+      : 'This ticket is no longer in line.'
+    : queueStatus === 'CLOSED' && ownEntry?.status === 'WAITING'
+      ? 'The queue is closed. Please check with staff about your ticket.'
+      : called
+        ? 'It’s your turn.'
+        : ownEntry
+          ? 'Stay nearby — this page updates automatically.'
+          : 'Your name is optional and never shown to other guests.';
 
   return (
     <div
@@ -85,7 +93,13 @@ export function CustomerTicket({
         <section className="ticket-hero" aria-labelledby="your-place-title">
           <div className="ticket-stub">
             <span id="your-place-title">
-              {ownEntry ? "You're in line" : 'Your ticket'}
+              {finished
+                ? 'Ticket ended'
+                : called
+                  ? 'Your turn'
+                  : ownEntry
+                    ? "You're in line"
+                    : 'Your ticket'}
             </span>
             <span aria-hidden="true">↓</span>
           </div>
@@ -149,22 +163,38 @@ export function CustomerTicket({
             <small>{ownEntry ? 'Place saved' : 'Not yet'}</small>
           </div>
           <div
-            className={`ticket-step ${ownEntry && !called ? 'is-active' : ''}`}
+            className={`ticket-step ${ownEntry?.status === 'WAITING' ? 'is-active' : ''}`}
           >
             <span className="ticket-step-marker">
               <Clock3 aria-hidden="true" />
             </span>
             <strong>Waiting</strong>
             <small>
-              {ownEntry && !called ? 'You’re in line' : 'Next step'}
+              {ownEntry?.status === 'WAITING'
+                ? 'You’re in line'
+                : finished
+                  ? 'Finished'
+                  : 'Next step'}
             </small>
           </div>
           <div className={`ticket-step ${called ? 'is-active' : ''}`}>
             <span className="ticket-step-marker">
               <Bell aria-hidden="true" />
             </span>
-            <strong>Called</strong>
-            <small>{called ? 'It’s your turn' : 'We’ll show it here'}</small>
+            <strong>
+              {finished
+                ? ownEntry?.status === 'COMPLETED'
+                  ? 'Completed'
+                  : 'Ended'
+                : 'Called'}
+            </strong>
+            <small>
+              {finished
+                ? 'Ticket closed'
+                : called
+                  ? 'It’s your turn'
+                  : 'We’ll show it here'}
+            </small>
           </div>
         </section>
 

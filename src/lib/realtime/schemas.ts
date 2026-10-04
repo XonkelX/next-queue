@@ -29,6 +29,7 @@ export const snapshotSchema = z.object({
   }),
   entries: z.array(entrySchema),
   role: z.enum(['public', 'customer', 'staff']),
+  isOwner: z.boolean().optional(),
   ownEntryId: z.uuid().nullable().optional(),
   waitingCount: z.number().int().nonnegative(),
   serverTime: z.string(),

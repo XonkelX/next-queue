@@ -11,16 +11,14 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { LandingQueuePreview } from '@/components/landing-queue-preview';
 import { SiteFooter } from '@/components/site-footer';
-import { demoRoutes } from '@/config/product';
 
 const surfaces = [
   {
     title: 'Customer check-in',
     description:
       'Join in seconds, then see your number and position without creating an account.',
-    href: demoRoutes.customer,
+    href: '#customer-check-in',
     icon: UserRound,
     image: '/images/lifestyle/wait-anywhere.webp',
     imageAlt:
@@ -30,7 +28,7 @@ const surfaces = [
     title: 'Staff queue board',
     description:
       'One focused place to call, complete, skip, and pause the flow of service.',
-    href: demoRoutes.staff,
+    href: '#staff-board',
     icon: Users,
     image: '/images/lifestyle/staff-workflow.webp',
     imageAlt:
@@ -40,7 +38,7 @@ const surfaces = [
     title: 'Public display',
     description:
       'A distance-readable view that makes the active number unmistakable.',
-    href: demoRoutes.display,
+    href: '#public-display',
     icon: Monitor,
     image: '/images/lifestyle/public-display.webp',
     imageAlt:
@@ -63,8 +61,8 @@ export default function Home() {
               view of the queue.
             </p>
             <div className="hero-actions">
-              <Link className="button button-accent" href="/demo">
-                Open the demo <ArrowRight aria-hidden="true" size={18} />
+              <Link className="button button-accent" href="/create">
+                Create your queue <ArrowRight aria-hidden="true" size={18} />
               </Link>
               <Link className="button button-secondary" href="#how-it-works">
                 See how it works
@@ -72,7 +70,15 @@ export default function Home() {
             </div>
           </div>
           <div className="home-product-preview">
-            <LandingQueuePreview />
+            <div className="home-service-photo">
+              <Image
+                src="/images/lifestyle/staff-workflow.webp"
+                alt="A café team member serving a customer at the counter."
+                fill
+                priority
+                sizes="(max-width: 1100px) 100vw, 55vw"
+              />
+            </div>
             <ol className="surface-list home-surface-list">
               {surfaces.map(({ icon: Icon, ...surface }, index) => (
                 <li key={surface.href}>
@@ -111,7 +117,7 @@ export default function Home() {
           </div>
           <div className="surface-detail-grid">
             {surfaces.map(({ icon: Icon, ...surface }, index) => (
-              <article key={surface.href}>
+              <article key={surface.href} id={surface.href.slice(1)}>
                 <div className="surface-detail-media">
                   <Image
                     src={surface.image}
@@ -127,8 +133,8 @@ export default function Home() {
                   </div>
                   <h3>{surface.title}</h3>
                   <p>{surface.description}</p>
-                  <Link className="surface-detail-link" href={surface.href}>
-                    Explore this view
+                  <Link className="surface-detail-link" href="/create">
+                    Create your queue
                     <ArrowRight aria-hidden="true" size={18} />
                   </Link>
                 </div>
@@ -155,8 +161,8 @@ export default function Home() {
               Customers keep their time. Staff keep the room moving. The moment
               of service stays human.
             </p>
-            <Link className="button button-accent" href="/demo">
-              Experience the queue
+            <Link className="button button-accent" href="/create">
+              Start your queue
               <ArrowRight aria-hidden="true" size={18} />
             </Link>
           </div>
@@ -181,7 +187,10 @@ export default function Home() {
             <article className="principle">
               <ShieldCheck aria-hidden="true" size={24} />
               <h3>Private by default</h3>
-              <p>No accounts, contact details, tracking, or advertising.</p>
+              <p>
+                No sign-up form, required contact details, tracking, or
+                advertising.
+              </p>
             </article>
           </div>
         </section>

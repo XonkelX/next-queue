@@ -3,11 +3,13 @@ import { expect, test } from '@playwright/test';
 
 const routes = [
   '/',
-  '/demo',
+  '/create',
   '/q/north-star-cafe',
   '/q/north-star-cafe/staff',
   '/q/north-star-cafe/display',
   '/about',
+  '/privacy',
+  '/queues',
 ];
 
 test.describe('primary routes', () => {
@@ -27,20 +29,23 @@ test.describe('primary routes', () => {
   }
 });
 
-test('landing and demo routes communicate the persistent product', async ({
+test('landing and creation routes communicate the persistent product', async ({
   page,
 }) => {
   await page.goto('/');
   await expect(
     page.getByRole('heading', { name: 'A calmer way to wait.' }),
   ).toBeVisible();
-  await page.getByRole('link', { name: /open the demo/i }).click();
-  await expect(page).toHaveURL(/\/demo$/);
+  await page
+    .getByRole('link', { name: /create your queue/i })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/create$/);
   await expect(
-    page.getByRole('heading', { name: /three points of view/i }),
+    page.getByRole('heading', { name: /create your queue/i }),
   ).toBeVisible();
   await expect(
-    page.getByRole('heading', { name: /issue your queue/i }),
+    page.getByRole('heading', { name: /queue details/i }),
   ).toBeVisible();
 });
 

@@ -2,13 +2,14 @@
 
 import { FormEvent, useState } from 'react';
 import { InvalidQueue } from '@/components/invalid-queue';
+import { QueueRecovery, QueueSyncNotice } from '@/components/queue-recovery';
 import { QueueAdapterError } from '@/lib/realtime/errors';
 import { CustomerTicket } from './customer-ticket';
 import { activeEntry, waitingEntries } from './transitions';
 import { useLiveQueue } from './use-live-queue';
 
 export function CustomerLive({ slug }: { slug: string }) {
-  const { adapter, snapshot, connection, error, commit, isNotFound } =
+  const { adapter, snapshot, connection, error, commit, isNotFound, retry } =
     useLiveQueue(slug);
   const [displayName, setDisplayName] = useState('');
   const [pending, setPending] = useState(false);
@@ -16,11 +17,7 @@ export function CustomerLive({ slug }: { slug: string }) {
 
   if (isNotFound) return <InvalidQueue />;
   if (!snapshot) {
-    return (
-      <div className="live-loading" role="status">
-        {error?.message ?? 'Preparing your place in the queue…'}
-      </div>
-    );
+    return <QueueRecovery error={error} retry={retry} />;
   }
 
   const ownEntry = snapshot.entries.find(
@@ -28,6 +25,8 @@ export function CustomerLive({ slug }: { slug: string }) {
   );
   const waiting = waitingEntries(snapshot.entries);
   const active = activeEntry(snapshot.entries);
+  const finished =
+    ownEntry?.status === 'COMPLETED' || ownEntry?.status === 'SKIPPED';
   const position =
     ownEntry?.status === 'WAITING'
       ? waiting.findIndex((entry) => entry.id === ownEntry.id) + 1
@@ -57,12 +56,31 @@ export function CustomerLive({ slug }: { slug: string }) {
     }
   }
 
+  async function leave() {
+    if (!adapter || !snapshot || !ownEntry) return;
+    setPending(true);
+    try {
+      commit(await adapter.leaveQueue(snapshot.queue.id, ownEntry.id));
+      setMessage('Your ticket has been cancelled.');
+    } catch (nextError) {
+      setMessage(
+        nextError instanceof QueueAdapterError
+          ? nextError.message
+          : 'Unable to cancel. Please try again.',
+      );
+    } finally {
+      setPending(false);
+    }
+  }
+
   const joinContent =
-    snapshot.queue.status === 'OPEN' && !ownEntry ? (
+    snapshot.queue.status === 'OPEN' && (!ownEntry || finished) ? (
       <div className="ticket-join-copy">
         <div>
           <p className="eyebrow">Step into line</p>
-          <h2 id="join-title">Claim your ticket.</h2>
+          <h2 id="join-title">
+            {finished ? 'Need another turn?' : 'Claim your ticket.'}
+          </h2>
           <p>Add a first name if you like. Your number is all we need.</p>
         </div>
         <div>
@@ -85,7 +103,7 @@ export function CustomerLive({ slug }: { slug: string }) {
             <button
               className="button button-accent"
               type="submit"
-              disabled={pending || connection === 'offline'}
+              disabled={pending || connection !== 'connected'}
             >
               {pending ? 'Joining…' : 'Join the queue'}
             </button>
@@ -96,12 +114,23 @@ export function CustomerLive({ slug }: { slug: string }) {
       <div className="ticket-saved-state" role="status">
         <div>
           <p className="eyebrow">Private by design</p>
-          <h2>Your place is saved.</h2>
+          <h2>
+            {finished ? 'This ticket has ended.' : 'Your place is saved.'}
+          </h2>
         </div>
         <p>
           This ticket belongs to this browser session. No account, email, or
           phone number required.
         </p>
+        {ownEntry.status === 'WAITING' && (
+          <button
+            className="text-button"
+            disabled={pending || connection !== 'connected'}
+            onClick={() => void leave()}
+          >
+            Cancel my ticket
+          </button>
+        )}
       </div>
     ) : (
       <div className="ticket-saved-state" role="status">
@@ -123,6 +152,10 @@ export function CustomerLive({ slug }: { slug: string }) {
 
   return (
     <>
+      <QueueSyncNotice connection={connection} retry={retry} />
+      <p className="notice customer-feedback" role="status" aria-live="polite">
+        {message}
+      </p>
       <CustomerTicket
         queueName={snapshot.queue.name}
         queueStatus={snapshot.queue.status}
@@ -134,9 +167,6 @@ export function CustomerLive({ slug }: { slug: string }) {
         connection={connection}
         joinContent={joinContent}
       />
-      <p className="sr-only" aria-live="polite">
-        {message}
-      </p>
     </>
   );
 }

@@ -6,8 +6,8 @@ const timestamp = '2026-07-17T14:00:00.000Z';
 export const initialQueueSnapshot: QueueSnapshot = {
   queue: {
     id: 'queue-demo-001',
-    slug: productConfig.demoQueueSlug,
-    name: productConfig.demoQueueName,
+    slug: 'north-star-cafe',
+    name: 'North Star Café',
     prefix: productConfig.defaultQueuePrefix,
     status: 'OPEN',
     revision: 1,

@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
 const queueSlug = process.env.PRODUCTION_QUEUE_SLUG;
-const applicationRoutes = ['/', '/demo', '/about'];
+const applicationRoutes = ['/', '/create', '/about', '/privacy', '/queues'];
 const queueRoutes = queueSlug
   ? [`/q/${queueSlug}`, `/q/${queueSlug}/staff`, `/q/${queueSlug}/display`]
   : [];
@@ -27,7 +27,7 @@ test('public routes and metadata endpoints are healthy', async ({
   );
 });
 
-for (const route of applicationRoutes) {
+for (const route of [...applicationRoutes, ...queueRoutes]) {
   test(`${route} has clean serious accessibility and console results`, async ({
     page,
   }) => {
@@ -37,6 +37,11 @@ for (const route of applicationRoutes) {
     });
     page.on('pageerror', (error) => errors.push(error.message));
     await page.goto(route);
+    await page.evaluate(() => document.fonts.ready);
+    if (route.startsWith('/q/'))
+      await expect(
+        page.getByText('Connecting to your queue…', { exact: true }),
+      ).toHaveCount(0);
     await expect(page.locator('h1')).toHaveCount(1);
     const results = await new AxeBuilder({ page }).analyze();
     expect(
@@ -53,8 +58,12 @@ for (const width of [320, 375, 768, 1024, 1440]) {
     page,
   }) => {
     await page.setViewportSize({ width, height: 900 });
-    for (const route of applicationRoutes) {
+    for (const route of [...applicationRoutes, ...queueRoutes]) {
       await page.goto(route);
+      if (route.startsWith('/q/'))
+        await expect(
+          page.getByText('Connecting to your queue…', { exact: true }),
+        ).toHaveCount(0);
       await expect
         .poll(() =>
           page.evaluate(

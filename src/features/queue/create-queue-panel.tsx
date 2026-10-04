@@ -2,6 +2,7 @@
 
 import { FormEvent, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { QueueSharing } from './queue-sharing';
 import { SupabaseQueueAdapter } from '@/lib/realtime/supabase-adapter';
 import { QueueAdapterError } from '@/lib/realtime/errors';
 
@@ -13,29 +14,32 @@ export function CreateQueuePanel() {
       return undefined;
     }
   }, []);
-  const [name, setName] = useState('North Star Café');
+  const [name, setName] = useState('');
   const [prefix, setPrefix] = useState('A');
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState('');
-  const [created, setCreated] = useState<{ slug: string; code: string }>();
+  const [created, setCreated] = useState<{
+    slug: string;
+    code: string | undefined;
+  }>();
   const codeRef = useRef<HTMLInputElement>(null);
 
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!adapter) {
       setMessage(
-        'Supabase is not configured. Follow the README local setup first.',
+        'Queue creation is temporarily unavailable. Please try again later.',
       );
       return;
     }
     setPending(true);
     try {
       const result = await adapter.createQueue(name, prefix);
-      if (!result.accessCode)
-        throw new Error('The one-time access code was not returned.');
       setCreated({ slug: result.snapshot.queue.slug, code: result.accessCode });
       setMessage(
-        'Queue created. Save the staff code now; it cannot be shown again.',
+        result.accessCode
+          ? 'Queue created. Save the staff code now; it cannot be shown again.'
+          : 'Queue created. Open the staff board to generate a new access code.',
       );
     } catch (error) {
       setMessage(
@@ -49,7 +53,7 @@ export function CreateQueuePanel() {
   }
 
   async function copyCode() {
-    if (!created) return;
+    if (!created?.code) return;
     try {
       await navigator.clipboard.writeText(created.code);
       setMessage('Staff code copied.');
@@ -66,104 +70,81 @@ export function CreateQueuePanel() {
         <span>↓</span>
       </div>
       <div className="setup-panel-content">
-        <p className="eyebrow">Start your service</p>
-        <h2 id="create-queue-title">Issue your queue.</h2>
-        <p className="setup-panel-intro">
-          One setup creates the customer ticket, staff board, and public
-          display—all synchronized in real time.
-        </p>
-        <form className="setup-form" onSubmit={create} aria-busy={pending}>
-          <label className="field-label" htmlFor="queue-name">
-            Venue or queue name
-          </label>
-          <input
-            className="text-input"
-            id="queue-name"
-            maxLength={80}
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            required
-            disabled={pending}
-          />
-          <label className="field-label" htmlFor="queue-prefix">
-            Ticket prefix
-          </label>
-          <input
-            className="text-input"
-            id="queue-prefix"
-            maxLength={3}
-            pattern="[A-Za-z]{1,3}"
-            value={prefix}
-            onChange={(event) => setPrefix(event.target.value)}
-            required
-            disabled={pending}
-          />
-          <button
-            className="button button-accent"
-            type="submit"
-            disabled={pending}
-          >
-            {pending ? 'Creating…' : 'Create my queue'}
-          </button>
-        </form>
-        <p className="notice" role="status" aria-live="polite">
-          {message ||
-            'Private browser session. No account or contact information required.'}
-        </p>
+        <h2 id="create-queue-title">
+          {created ? 'Your queue is ready.' : 'Queue details.'}
+        </h2>
         {!created && (
-          <div className="setup-deliverables" aria-label="Included queue views">
-            <p className="eyebrow">Ready in one setup</p>
-            <ul>
-              <li>
-                <span>01</span>
-                <div>
-                  <strong>Customer ticket</strong>
-                  <small>Private number and live position</small>
-                </div>
-              </li>
-              <li>
-                <span>02</span>
-                <div>
-                  <strong>Staff board</strong>
-                  <small>One focused operational view</small>
-                </div>
-              </li>
-              <li>
-                <span>03</span>
-                <div>
-                  <strong>Public display</strong>
-                  <small>Now serving and up-next visibility</small>
-                </div>
-              </li>
-            </ul>
-          </div>
-        )}
-        {created && (
-          <div className="code-reveal">
-            <strong>One-time staff access code</strong>
-            <p>
-              Anyone with this code can control the queue. Save it privately
-              now.
-            </p>
+          <form className="setup-form" onSubmit={create} aria-busy={pending}>
+            <label className="field-label" htmlFor="queue-name">
+              Venue or queue name
+            </label>
             <input
-              ref={codeRef}
               className="text-input"
-              aria-label="One-time staff access code"
-              readOnly
-              value={created.code}
-              onFocus={(event) => event.currentTarget.select()}
+              id="queue-name"
+              placeholder="Your venue name"
+              minLength={2}
+              maxLength={80}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              required
+              disabled={pending}
+            />
+            <label className="field-label" htmlFor="queue-prefix">
+              Ticket prefix
+            </label>
+            <input
+              className="text-input"
+              id="queue-prefix"
+              maxLength={3}
+              pattern="[A-Za-z]{1,3}"
+              value={prefix}
+              onChange={(event) => setPrefix(event.target.value)}
+              required
+              disabled={pending}
             />
             <button
-              className="button button-secondary"
-              type="button"
-              onClick={() => void copyCode()}
+              className="button button-accent"
+              type="submit"
+              disabled={pending}
             >
-              Copy code
+              {pending ? 'Creating…' : 'Create my queue'}
             </button>
-            <p className="field-hint">
-              Queue slug: <code>{created.slug}</code>. This staff code only
-              works with this queue.
-            </p>
+          </form>
+        )}
+        <p className="notice" role="status" aria-live="polite">
+          {message ||
+            'Save your staff code and queue link. You will need them if you clear this browser or switch devices.'}
+        </p>
+        {created && (
+          <div className="code-reveal">
+            {created.code && (
+              <>
+                <strong>One-time staff access code</strong>
+                <p>
+                  Anyone with this code can control the queue. Save it privately
+                  now.
+                </p>
+                <input
+                  ref={codeRef}
+                  className="text-input"
+                  aria-label="One-time staff access code"
+                  readOnly
+                  value={created.code}
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  onClick={() => void copyCode()}
+                >
+                  Copy code
+                </button>
+                <p className="field-hint">
+                  Queue slug: <code>{created.slug}</code>. This staff code only
+                  works with this queue.
+                </p>
+              </>
+            )}
             <div className="created-queue-actions">
               <Link
                 className="button button-accent"
@@ -184,7 +165,14 @@ export function CreateQueuePanel() {
                 Open your public display
               </Link>
             </div>
+            <QueueSharing slug={created.slug} />
           </div>
+        )}
+        {!created && (
+          <p>
+            Already created a queue?{' '}
+            <Link href="/queues">Find it in My queues</Link>.
+          </p>
         )}
       </div>
     </section>

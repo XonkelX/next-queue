@@ -39,6 +39,7 @@ export interface QueueSnapshot {
   queue: Queue;
   entries: QueueEntry[];
   role?: 'public' | 'customer' | 'staff';
+  isOwner?: boolean;
   ownEntryId?: string;
   waitingCount?: number;
   serverTime?: string;

@@ -7,6 +7,11 @@ export type Json =
   | Json[];
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: '14.5';
+  };
   public: {
     Tables: {
       queue_commands: {
@@ -320,6 +325,7 @@ export type Database = {
         Args: { queue_id: string; request_id: string };
         Returns: Json;
       };
+      can_read_queue: { Args: { target_queue_id: string }; Returns: boolean };
       claim_staff_access: {
         Args: { access_code: string; queue_slug: string; request_id: string };
         Returns: Json;
@@ -332,6 +338,14 @@ export type Database = {
         Args: { queue_id: string; request_id: string };
         Returns: Json;
       };
+      complete_and_call_next: {
+        Args: {
+          expected_entry_id: string;
+          queue_id: string;
+          request_id: string;
+        };
+        Returns: Json;
+      };
       create_queue: {
         Args: { queue_name: string; queue_prefix: string; request_id: string };
         Returns: Json;
@@ -341,11 +355,20 @@ export type Database = {
         Args: { display_name: string; queue_slug: string; request_id: string };
         Returns: Json;
       };
+      leave_queue: {
+        Args: { entry_id: string; queue_id: string; request_id: string };
+        Returns: Json;
+      };
+      list_staff_queues: { Args: never; Returns: Json };
       pause_queue: {
         Args: { queue_id: string; request_id: string };
         Returns: Json;
       };
       reopen_queue: {
+        Args: { queue_id: string; request_id: string };
+        Returns: Json;
+      };
+      rotate_staff_code: {
         Args: { queue_id: string; request_id: string };
         Returns: Json;
       };

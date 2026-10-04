@@ -1,12 +1,13 @@
-import {
-  Accessibility,
-  BadgeDollarSign,
-  Network,
-  ShieldCheck,
-} from 'lucide-react';
+import type { Metadata } from 'next';
+import { Accessibility, KeyRound, Network, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
 import { SiteFooter } from '@/components/site-footer';
 import { productConfig } from '@/config/product';
+
+export const metadata: Metadata = {
+  title: 'About',
+  alternates: { canonical: '/about' },
+};
 
 const principles = [
   {
@@ -17,11 +18,11 @@ const principles = [
       'No email, phone number, password, analytics, advertising, or profiling. Optional first names stay private.',
   },
   {
-    eyebrow: 'Technology',
+    eyebrow: 'Coordination',
     title: 'One synchronized system.',
     icon: Network,
     description:
-      'Next.js, PostgreSQL transactions, Row Level Security, and Realtime keep every view aligned.',
+      'Customers see their place, staff manage service, and the public screen shows the current number.',
   },
   {
     eyebrow: 'Accessibility',
@@ -31,11 +32,11 @@ const principles = [
       'Keyboard operation, high contrast, large targets, calm announcements, and reduced-motion alternatives.',
   },
   {
-    eyebrow: 'Cost',
-    title: 'Designed to remain $0.',
-    icon: BadgeDollarSign,
+    eyebrow: 'Access',
+    title: 'Your team stays in control.',
+    icon: KeyRound,
     description:
-      'Built and validated within practical free-tier limits, without paid add-ons or usage-based billing.',
+      'A private staff code controls access to your queue. Save it together with your staff-board link.',
   },
 ];
 
@@ -44,12 +45,11 @@ export default function AboutPage() {
     <>
       <main id="main-content" className="page-shell about-page">
         <div className="about-intro">
-          <p className="eyebrow">About the project</p>
+          <p className="eyebrow">About Next</p>
           <h1>Clear queues. Less friction.</h1>
           <p className="lede">
-            {productConfig.statement} Next explores how thoughtful interface
-            design can make a small, time-sensitive service system feel clear
-            and humane.
+            {productConfig.statement} Next helps teams organize arrivals, call
+            the next customer, and keep everyone informed during service.
           </p>
         </div>
         <section className="about-human-story" aria-labelledby="people-title">
@@ -87,7 +87,7 @@ export default function AboutPage() {
             ),
           )}
         </div>
-        <section className="about-manifesto" aria-label="Project principle">
+        <section className="about-manifesto" aria-label="Product principle">
           Quiet technology. Clear progress.
         </section>
       </main>

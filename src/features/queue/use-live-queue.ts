@@ -19,14 +19,18 @@ export function useLiveQueue(slug: string) {
     }
   }, []);
   const [snapshot, setSnapshot] = useState<QueueSnapshot>();
+  const [attempt, setAttempt] = useState(0);
   const [connection, setConnection] = useState<ConnectionState>('connecting');
   const [error, setError] = useState<Error | undefined>(
     'error' in adapterResult ? adapterResult.error : undefined,
   );
 
   const commit = useCallback((next: QueueSnapshot) => {
+    setError(undefined);
     setSnapshot((current) =>
-      !current || next.queue.revision >= current.queue.revision
+      !current ||
+      current.queue.id !== next.queue.id ||
+      next.queue.revision >= current.queue.revision
         ? next
         : current,
     );
@@ -38,15 +42,22 @@ export function useLiveQueue(slug: string) {
     let cancelled = false;
     adapterResult.adapter
       .subscribe(slug, {
-        onSnapshot: commit,
-        onConnectionState: setConnection,
-        onError: (nextError) => setError(nextError),
+        onSnapshot: (next) => {
+          if (!cancelled) commit(next);
+        },
+        onConnectionState: (state) => {
+          if (!cancelled) setConnection(state);
+        },
+        onError: (nextError) => {
+          if (!cancelled) setError(nextError);
+        },
       })
       .then((cleanup) => {
         if (cancelled) void cleanup();
         else unsubscribe = cleanup;
       })
       .catch((nextError: unknown) => {
+        if (cancelled) return;
         setConnection('error');
         setError(
           nextError instanceof Error
@@ -58,7 +69,7 @@ export function useLiveQueue(slug: string) {
       cancelled = true;
       if (unsubscribe) void unsubscribe();
     };
-  }, [adapterResult, commit, slug]);
+  }, [adapterResult, commit, slug, attempt]);
 
   return {
     adapter: 'adapter' in adapterResult ? adapterResult.adapter : undefined,
@@ -67,6 +78,11 @@ export function useLiveQueue(slug: string) {
     error,
     commit,
     clearError: () => setError(undefined),
+    retry: () => {
+      setError(undefined);
+      setConnection('connecting');
+      setAttempt((value) => value + 1);
+    },
     isNotFound:
       error instanceof QueueAdapterError && error.code === 'QUEUE_NOT_FOUND',
   };

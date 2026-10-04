@@ -11,6 +11,9 @@ import {
 } from 'lucide-react';
 import { FormEvent, useRef, useState } from 'react';
 import { AnimatedQueueNumber } from '@/components/animated-queue-number';
+import Link from 'next/link';
+import { QueueRecovery, QueueSyncNotice } from '@/components/queue-recovery';
+import { QueueSharing } from './queue-sharing';
 import { InvalidQueue } from '@/components/invalid-queue';
 import { QueueSurfaceHeader } from '@/components/queue-surface-header';
 import { QueueAdapterError } from '@/lib/realtime/errors';
@@ -24,21 +27,17 @@ const joinedTime = new Intl.DateTimeFormat('en-US', {
 });
 
 export function StaffLive({ slug }: { slug: string }) {
-  const { adapter, snapshot, connection, error, commit, isNotFound } =
+  const { adapter, snapshot, connection, error, commit, isNotFound, retry } =
     useLiveQueue(slug);
   const [accessCode, setAccessCode] = useState('');
   const [pending, setPending] = useState('');
   const [message, setMessage] = useState('Ready.');
+  const [newCode, setNewCode] = useState('');
   const messageRef = useRef<HTMLParagraphElement>(null);
   const reduced = useReducedMotion();
 
   if (isNotFound) return <InvalidQueue />;
-  if (!snapshot)
-    return (
-      <div className="live-loading" role="status">
-        {error?.message ?? 'Preparing the staff board…'}
-      </div>
-    );
+  if (!snapshot) return <QueueRecovery error={error} retry={retry} />;
 
   async function claim(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -74,6 +73,7 @@ export function StaffLive({ slug }: { slug: string }) {
           status={snapshot.queue.status}
           connection={connection}
         />
+        <QueueSyncNotice connection={connection} retry={retry} />
         <section className="setup-panel" aria-labelledby="staff-access-title">
           <p className="eyebrow">Staff access</p>
           <h2 id="staff-access-title">Enter the queue access code.</h2>
@@ -130,12 +130,12 @@ export function StaffLive({ slug }: { slug: string }) {
   async function command(
     label: string,
     action: () => Promise<QueueSnapshot>,
-    success: string,
+    success?: string,
   ) {
     setPending(label);
     try {
       commit(await action());
-      setMessage(success);
+      if (success) setMessage(success);
       requestAnimationFrame(() => messageRef.current?.focus());
     } catch (nextError) {
       setMessage(
@@ -150,23 +150,19 @@ export function StaffLive({ slug }: { slug: string }) {
 
   async function completeServing() {
     if (!adapter || !active) return;
-    const callNext =
-      currentSnapshot.queue.status === 'OPEN' && waiting.length > 0;
     setPending('complete');
     try {
-      const completed = await adapter.completeCurrent(currentSnapshot.queue.id);
-      commit(completed);
-
-      if (callNext) {
-        const next = await adapter.callNext(currentSnapshot.queue.id);
-        const nextActive = activeEntry(next.entries);
-        commit(next);
-        setMessage(
-          `${active.numberLabel} completed. ${nextActive?.numberLabel ?? 'Next customer'} called next.`,
-        );
-      } else {
-        setMessage(`${active.numberLabel} completed.`);
-      }
+      const next = await adapter.completeAndCallNext(
+        currentSnapshot.queue.id,
+        active.id,
+      );
+      commit(next);
+      const nextActive = activeEntry(next.entries);
+      setMessage(
+        nextActive
+          ? `${active.numberLabel} completed. ${nextActive.numberLabel} called next.`
+          : `${active.numberLabel} completed.`,
+      );
       requestAnimationFrame(() => messageRef.current?.focus());
     } catch (nextError) {
       setMessage(
@@ -187,6 +183,58 @@ export function StaffLive({ slug }: { slug: string }) {
         status={snapshot.queue.status}
         connection={connection}
       />
+      <QueueSyncNotice connection={connection} retry={retry} />
+      <div className="staff-utilities">
+        <Link className="text-button" href="/queues">
+          My queues
+        </Link>
+        <QueueSharing slug={slug} />
+        {snapshot.isOwner && (
+          <details className="access-settings">
+            <summary>Manage staff access</summary>
+            <p>
+              Lost the code? Replace it here. This signs out other staff from
+              this queue. Your access stays active in this browser.
+            </p>
+            <button
+              className="button button-secondary"
+              disabled={Boolean(pending) || connection !== 'connected'}
+              onClick={() => {
+                if (
+                  !adapter ||
+                  !window.confirm(
+                    'Replace the access code and revoke access for all other staff on this queue?',
+                  )
+                )
+                  return;
+                void command('rotate', async () => {
+                  const next = await adapter.rotateStaffCode(snapshot.queue.id);
+                  setNewCode(next.accessCode ?? '');
+                  setMessage(
+                    next.accessCode
+                      ? 'Staff access replaced. Save the new code privately.'
+                      : 'Access replaced. The response was interrupted; replace the code again to see a new one.',
+                  );
+                  return next;
+                });
+              }}
+            >
+              Replace staff code
+            </button>
+            {newCode && (
+              <label className="field-label">
+                New staff code — copy and save privately
+                <input
+                  className="text-input"
+                  readOnly
+                  value={newCode}
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+              </label>
+            )}
+          </details>
+        )}
+      </div>
       <div className="staff-layout">
         <section className="staff-active" aria-labelledby="active-title">
           <div className="staff-ticket-stub" aria-hidden="true">
@@ -246,7 +294,7 @@ export function StaffLive({ slug }: { slug: string }) {
                     <button
                       className="text-button waiting-skip"
                       type="button"
-                      disabled={Boolean(pending)}
+                      disabled={Boolean(pending) || connection !== 'connected'}
                       aria-label={`Skip ${entry.numberLabel}`}
                       onClick={() =>
                         adapter &&
@@ -278,7 +326,7 @@ export function StaffLive({ slug }: { slug: string }) {
                 <button
                   className="button button-accent staff-primary-action"
                   type="button"
-                  disabled={Boolean(pending)}
+                  disabled={Boolean(pending) || connection !== 'connected'}
                   onClick={() => void completeServing()}
                 >
                   <CheckCircle2 aria-hidden="true" />
@@ -289,7 +337,7 @@ export function StaffLive({ slug }: { slug: string }) {
                 <button
                   className="button button-secondary staff-secondary-action"
                   type="button"
-                  disabled={Boolean(pending)}
+                  disabled={Boolean(pending) || connection !== 'connected'}
                   onClick={() =>
                     adapter &&
                     void command(
@@ -309,6 +357,7 @@ export function StaffLive({ slug }: { slug: string }) {
                 type="button"
                 disabled={
                   Boolean(pending) ||
+                  connection !== 'connected' ||
                   !waiting.length ||
                   snapshot.queue.status !== 'OPEN'
                 }
@@ -329,7 +378,7 @@ export function StaffLive({ slug }: { slug: string }) {
               <button
                 className="button button-secondary staff-secondary-action"
                 type="button"
-                disabled={Boolean(pending)}
+                disabled={Boolean(pending) || connection !== 'connected'}
                 onClick={() =>
                   adapter &&
                   void command(
@@ -347,7 +396,7 @@ export function StaffLive({ slug }: { slug: string }) {
               <button
                 className="button button-secondary staff-secondary-action"
                 type="button"
-                disabled={Boolean(pending)}
+                disabled={Boolean(pending) || connection !== 'connected'}
                 onClick={() =>
                   adapter &&
                   void command(
@@ -365,9 +414,12 @@ export function StaffLive({ slug }: { slug: string }) {
               <button
                 className="text-button staff-close-action"
                 type="button"
-                disabled={Boolean(pending)}
+                disabled={Boolean(pending) || connection !== 'connected'}
                 onClick={() =>
                   adapter &&
+                  window.confirm(
+                    'Close this queue? New guests will not be able to join. This queue cannot be reopened; pause it instead if you plan to resume.',
+                  ) &&
                   void command(
                     'close',
                     () => adapter.closeQueue(snapshot.queue.id),

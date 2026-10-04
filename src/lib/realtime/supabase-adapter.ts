@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 import type { QueueSnapshot } from '@/features/queue/types';
 import type { Database, Json } from '@/lib/supabase/database.types';
@@ -58,7 +59,12 @@ function parseResult(
     const code = queueErrorCodes.includes(error.data.error as never)
       ? (error.data.error as (typeof queueErrorCodes)[number])
       : 'UNKNOWN';
-    throw new QueueAdapterError(code, error.data.message);
+    throw new QueueAdapterError(
+      code,
+      code === 'QUEUE_LIMIT_REACHED'
+        ? 'This browser already has three active queues. Close a queue before creating another.'
+        : error.data.message,
+    );
   }
 
   const parsed = snapshotSchema.safeParse(data);
@@ -74,6 +80,7 @@ function parseResult(
     queue: value.queue,
     entries: value.entries,
     role: value.role,
+    isOwner: value.isOwner ?? false,
     ...(value.ownEntryId ? { ownEntryId: value.ownEntryId } : {}),
     waitingCount: value.waitingCount,
     serverTime: value.serverTime,
@@ -181,6 +188,53 @@ export class SupabaseQueueAdapter implements QueueRealtimeAdapter {
     );
   }
 
+  async completeAndCallNext(queueId: string, entryId: string) {
+    return this.mutate((id) =>
+      this.client.rpc('complete_and_call_next', {
+        queue_id: queueId,
+        expected_entry_id: entryId,
+        request_id: id,
+      }),
+    );
+  }
+
+  async leaveQueue(queueId: string, entryId: string) {
+    return this.mutate((id) =>
+      this.client.rpc('leave_queue', {
+        queue_id: queueId,
+        entry_id: entryId,
+        request_id: id,
+      }),
+    );
+  }
+
+  async rotateStaffCode(queueId: string) {
+    return this.mutate((id) =>
+      this.client.rpc('rotate_staff_code', {
+        queue_id: queueId,
+        request_id: id,
+      }),
+    );
+  }
+
+  async listQueues() {
+    await this.ready();
+    const { data, error } = await this.client.rpc('list_staff_queues');
+    if (error)
+      throw new Error('Your queues could not be loaded. Please try again.');
+    return z
+      .array(
+        z.object({
+          id: z.string().uuid(),
+          slug: z.string(),
+          name: z.string(),
+          status: z.enum(['OPEN', 'PAUSED', 'CLOSED']),
+          is_owner: z.boolean(),
+        }),
+      )
+      .parse(data);
+  }
+
   async skipEntry(queueId: string, entryId: string) {
     return this.mutate((stableRequestId) =>
       this.client.rpc('skip_entry', {
@@ -227,6 +281,7 @@ export class SupabaseQueueAdapter implements QueueRealtimeAdapter {
     let refreshInFlight: Promise<boolean> | undefined;
     let refreshQueued = false;
     let hiddenAt = 0;
+    let channelReady = false;
 
     const refresh = (reason: string, force = false): Promise<boolean> => {
       if (stopped) return Promise.resolve(false);
@@ -236,7 +291,10 @@ export class SupabaseQueueAdapter implements QueueRealtimeAdapter {
       }
       refreshInFlight = this.getSnapshot(slug)
         .then((snapshot) => {
+          if (stopped) return false;
           if (gate.accept(snapshot, force)) callbacks.onSnapshot(snapshot);
+          if (channelReady && navigator.onLine)
+            callbacks.onConnectionState('connected');
           if (process.env.NODE_ENV === 'development') {
             console.debug('[queue-sync]', {
               reason,
@@ -246,6 +304,10 @@ export class SupabaseQueueAdapter implements QueueRealtimeAdapter {
           return true;
         })
         .catch((error: unknown) => {
+          if (stopped) return false;
+          callbacks.onConnectionState(
+            navigator.onLine ? 'reconnecting' : 'offline',
+          );
           callbacks.onError(
             error instanceof Error
               ? error
@@ -291,16 +353,23 @@ export class SupabaseQueueAdapter implements QueueRealtimeAdapter {
         invalidate,
       )
       .subscribe((status) => {
+        if (stopped) return;
         if (process.env.NODE_ENV === 'development')
           console.debug('[queue-sync]', { status });
         if (status === 'SUBSCRIBED') {
-          callbacks.onConnectionState('connected');
+          channelReady = true;
+          callbacks.onConnectionState('reconnecting');
           void refresh('subscribed', true);
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          channelReady = false;
+          callbacks.onError(
+            new Error('Live updates could not connect. Please retry.'),
+          );
           callbacks.onConnectionState(
             navigator.onLine ? 'reconnecting' : 'offline',
           );
         } else if (status === 'CLOSED' && !stopped) {
+          channelReady = false;
           callbacks.onConnectionState(
             navigator.onLine ? 'reconnecting' : 'offline',
           );
@@ -310,7 +379,8 @@ export class SupabaseQueueAdapter implements QueueRealtimeAdapter {
     const online = () => {
       callbacks.onConnectionState('reconnecting');
       void refresh('browser-online', true).then((synchronized) => {
-        if (synchronized && !stopped) callbacks.onConnectionState('connected');
+        if (synchronized && channelReady && !stopped)
+          callbacks.onConnectionState('connected');
       });
     };
     const offline = () => callbacks.onConnectionState('offline');

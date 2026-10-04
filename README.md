@@ -1,14 +1,14 @@
 # Next — Real-Time Queue System
 
-> A calm, persistent queue for small service teams, built and deployed as a portfolio project by Oniel Alejo Feliz.
+> A calm, persistent queue for small service teams, for managing customer arrivals and service.
 
-[Live application](https://next-queue-omega.vercel.app) · [Try the demo](https://next-queue-omega.vercel.app/demo) · [Watch the 27-second demo](docs/assets/video/next-v1-demo.mp4) · [Read the v1.0 release notes](docs/releases/v1.0.0.md)
+[Live application](https://next-queue-omega.vercel.app) · [Create a queue](https://next-queue-omega.vercel.app/create) · [Read the v1.0 release notes](docs/releases/v1.0.0.md)
 
 ![Next landing page](docs/assets/screenshots/landing-page.png)
 
 ## Product overview
 
-Next gives customers, staff, and a public display one synchronized answer to three questions: who is waiting, who is being served, and who is next. It replaces paper lists and shouted names with an intentionally small workflow that works without permanent accounts, contact details, tracking, or paid infrastructure.
+Next gives customers, staff, and a public display one synchronized answer to three questions: who is waiting, who is being served, and who is next. It replaces paper lists and shouted names with an intentionally small workflow that works without permanent accounts, contact details or marketing trackers.
 
 The v1.0 product includes:
 
@@ -19,11 +19,11 @@ The v1.0 product includes:
 - persistent PostgreSQL state and multi-client Realtime convergence
 - responsive light/dark presentation, reduced motion, and accessible status feedback
 
-## Live demo
+## Start a queue
 
-Open the [production demo](https://next-queue-omega.vercel.app/demo), create a synthetic queue, and save the one-time staff code privately. The creator is authorized immediately. Open customer, staff, and display routes in separate tabs or browser profiles to see changes converge without refresh.
+Open [queue setup](https://next-queue-omega.vercel.app/create), create a queue for your venue, and save the one-time staff code privately. The creator is authorized immediately. Open customer, staff, and display routes in separate tabs or browser profiles to see changes converge without refresh.
 
-Use synthetic information only. An optional customer first name is visible only to authorized staff. Clearing browser data loses that anonymous identity, and a lost staff code cannot be recovered through the product.
+An optional first name is visible to its customer and authorized staff. My queues restores staff boards in the same browser. A creator can replace a lost staff code and revoke other staff sessions; losing both the original browser identity and the code still prevents recovery. Queue links and locally generated QR codes are available on the staff board.
 
 ## Screenshots
 
@@ -39,7 +39,15 @@ Use synthetic information only. An optional customer first name is visible only 
 | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
 | ![Responsive customer view on mobile](docs/assets/screenshots/mobile-view.png) | ![Next landing page in dark theme](docs/assets/screenshots/dark-theme.png) |
 
-All portfolio media was captured from the final production build with a temporary synthetic queue. The queue, related rows, anonymous identities, and one-time capability were removed after capture.
+All product media was captured from the final production build with a temporary synthetic queue. The queue, related rows, anonymous identities, and one-time capability were removed after capture.
+
+## Typography
+
+The interface aims to feel clear, welcoming and operational, avoiding cramped reading and decorative controls. Anton remains on short headings and ticket numbers; Barlow 400/500/600/700 carries paragraphs, labels, navigation and buttons. Next.js self-hosts both families through `next/font` with `display: swap`.
+
+Three systems were compared: Anton + Barlow Condensed retains the original density but crowds small controls; Anton + Barlow preserves the ticket character while improving reading and hierarchy; system sans alone minimizes downloads but loses that visual identity. The selected pair uses two families, Arial/Impact fallbacks and container-aware ticket sizing for longer identifiers. English copy, accented names, ticket numbers and mobile wrapping are the main validation content.
+
+Font sources and exact SIL OFL 1.1 license copies: [Barlow source](https://github.com/google/fonts/tree/main/ofl/barlow), [Barlow license](public/licenses/Barlow-OFL.txt), [Anton source](https://github.com/google/fonts/tree/main/ofl/anton), [Anton license](public/licenses/Anton-OFL.txt). Loading and role mapping live in `src/app/layout.tsx`, `ticket-theme.css` and `product-ui.css`.
 
 ## Architecture
 
@@ -70,7 +78,7 @@ flowchart LR
   RT -->|"invalidation"| Clients
 ```
 
-The database has eight application tables. Public state lives in `queues` and `queue_entries`; private names, ownership, staff membership, access hashes, rate-limit attempts, idempotency receipts, and events remain outside the Realtime publication. See the [data model](docs/architecture/data-model.md) and [architecture decision record](docs/architecture/adr-002-supabase-realtime.md).
+The database has eight public application tables plus a private queue-link access table. Public state lives in `queues` and `queue_entries`; private names, ownership, staff membership, access hashes, rate-limit attempts, idempotency receipts, and events remain outside the Realtime publication. See the [data model](docs/architecture/data-model.md) and [architecture decision record](docs/architecture/adr-002-supabase-realtime.md).
 
 ## Data flow
 
@@ -137,6 +145,10 @@ flowchart TD
 
 The full threat and authorization model is documented in [authorization and security](docs/security/authorization.md).
 
+The production dependency audit is clean. The full development audit currently reports the upstream `braces` advisory [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm), inherited by the Next.js ESLint tooling. CI gates production dependencies with `npm audit --omit=dev`; it does not treat that development advisory as resolved. Do not downgrade the framework lint configuration to bypass it.
+
+Queue records currently have no automatic retention cleanup. Per-identity limits do not replace CAPTCHA or an account recovery system. The hosted database remains on its existing Free plan.
+
 ## Concurrency and idempotency
 
 Commands execute in database transactions with queue/entry row locks. A partial unique index enforces at most one `SERVING` entry per queue, while unique `(queue_id, sequence)` and `(queue_id, number_label)` constraints prevent duplicate or reused numbers.
@@ -151,7 +163,7 @@ Clients resynchronize after initial subscription, browser `online`, channel reco
 
 ## Testing
 
-The release evidence contains 131 passing automated checks without double-counting the Realtime unit subset:
+The original v1.0 release evidence below is historical. The October hardening adds regression coverage for terminal tickets, create replay recovery, atomic staff advancement, four-digit tickets and queue-link privacy.
 
 | Layer                  | Passing checks | What it covers                                                                                          |
 | ---------------------- | -------------: | ------------------------------------------------------------------------------------------------------- |
@@ -181,7 +193,7 @@ No custom domain, paid analytics, paid storage, add-on, trial, payment method, o
 
 ## Free-tier limitations
 
-This portfolio deployment has no commercial SLA. Supabase Free may pause an inactive project and both providers impose finite compute, database, bandwidth, build, function, and connection limits. The design is appropriate for small queues, not unbounded traffic or enterprise operations.
+This deployment has no commercial SLA. Supabase Free may pause an inactive project and both providers impose finite compute, database, bandwidth, build, function, and connection limits. The design is appropriate for small queues, not unbounded traffic or enterprise operations.
 
 Anonymous ownership is lost when browser data is cleared. A lost one-time staff code is unrecoverable without an already-authorized session. Automated anonymous-user retention, capability recovery/rotation, distributed rate limiting, monitoring, backups, and formal support are outside v1.0.
 
@@ -203,7 +215,7 @@ Copy `.env.example` to `.env.local`, then use the local API URL and **publishabl
 npm run dev
 ```
 
-Open [http://localhost:3000/demo](http://localhost:3000/demo). The deterministic `north-star-cafe` seed contains display-safe visual data and intentionally has no recoverable staff code.
+Open [http://localhost:3000/create](http://localhost:3000/create). The deterministic `north-star-cafe` seed contains display-safe visual data and intentionally has no recoverable staff code.
 
 Useful validation commands:
 
@@ -231,4 +243,4 @@ Database and browser validation additionally use `npm run db:test`, `npm run tes
 
 ## License
 
-No open-source license has been granted. The repository is presented as a portfolio project; all rights are reserved by Oniel Alejo Feliz.
+No open-source license has been granted. All rights are reserved by Oniel Alejo Feliz.

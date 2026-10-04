@@ -8,7 +8,7 @@ export async function createTestQueue(
 ) {
   const context = await browser.newContext();
   const page = await context.newPage();
-  await page.goto('/demo');
+  await page.goto('/create');
   await page.getByLabel('Venue or queue name').fill(name);
   await page.getByLabel('Ticket prefix').fill(prefix);
   await page.getByRole('button', { name: 'Create my queue' }).click();

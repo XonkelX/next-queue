@@ -7,9 +7,9 @@ import { productConfig } from '@/config/product';
 import { ThemeToggle } from './theme-toggle';
 
 const links = [
-  { href: '/demo', label: 'Demo' },
+  { href: '/create', label: 'Create queue' },
   { href: '/#how-it-works', label: 'How it works' },
-  { href: '/about', label: 'About' },
+  { href: '/queues', label: 'My queues' },
 ];
 
 export function SiteHeader() {
@@ -48,7 +48,15 @@ export function SiteHeader() {
           </summary>
           <nav className="mobile-menu" aria-label="Mobile navigation">
             {links.map((link) => (
-              <Link href={link.href} key={link.href}>
+              <Link
+                href={link.href}
+                key={link.href}
+                onClick={(event) =>
+                  event.currentTarget
+                    .closest('details')
+                    ?.removeAttribute('open')
+                }
+              >
                 {link.label}
               </Link>
             ))}
