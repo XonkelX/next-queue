@@ -32,7 +32,7 @@ test('customer, staff, and display converge without refresh and resync after off
   await expect(second.page.getByText('Your position: 1 of 1')).toBeVisible();
 
   await second.context.setOffline(true);
-  await expect(second.page.getByText('Offline')).toBeVisible();
+  await expect(second.page.getByText('Offline', { exact: true })).toBeVisible();
   await created.page
     .getByRole('button', { name: 'Complete & call next' })
     .click();
