@@ -1,6 +1,7 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 import { createSupabaseBrowserClient } from './client';
+import { requestCaptchaToken } from './captcha';
 
 export class AnonymousSessionError extends Error {
   readonly code = 'AUTH_INITIALIZATION_FAILED';
@@ -22,7 +23,14 @@ export function ensureAnonymousSession(
     const { data: userData, error: userError } = await client.auth.getUser();
     if (!userError && userData.user) return userData.user;
 
-    const { data, error } = await client.auth.signInAnonymously();
+    // A failed network check must not replace an existing identity.
+    const { data: local, error: sessionError } = await client.auth.getSession();
+    if (sessionError || local.session) throw new AnonymousSessionError();
+
+    const captchaToken = await requestCaptchaToken();
+    const { data, error } = await client.auth.signInAnonymously({
+      options: captchaToken ? { captchaToken } : {},
+    });
     if (error || !data.user) throw new AnonymousSessionError();
     return data.user;
   })().catch((error: unknown) => {

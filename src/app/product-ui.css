@@ -332,3 +332,45 @@ summary {
     font-size: min(24rem, calc(155cqw / var(--label-chars, 5)));
   }
 }
+
+.account-access {
+  border-block: 1px solid var(--line);
+  padding-block: 1.5rem;
+  margin-block: 2rem;
+}
+.account-access form {
+  display: grid;
+  gap: 0.8rem;
+  max-width: 42rem;
+}
+.account-access fieldset {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem;
+}
+.account-access input[type='radio'] {
+  margin-right: 0.5rem;
+  accent-color: var(--accent);
+}
+.account-access p {
+  overflow-wrap: anywhere;
+}
+.verification-dialog {
+  width: min(28rem, calc(100% - 2rem));
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  color: var(--ink);
+  background: var(--paper);
+}
+.verification-dialog::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+.verification-dialog h2 {
+  font-family: var(--body-font);
+  font-size: 1.4rem;
+}
+.verification-dialog p,
+.verification-dialog button {
+  margin-block: 1rem;
+}

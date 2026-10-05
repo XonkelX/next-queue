@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SupabaseQueueAdapter } from '@/lib/realtime/supabase-adapter';
+import { AccountAccess } from './account-access';
+import { accountRecoveryEnabled } from '@/lib/supabase/account';
 
 type SavedQueue = Awaited<
   ReturnType<SupabaseQueueAdapter['listQueues']>
@@ -102,6 +104,7 @@ export function MyQueues() {
           </Link>
         </div>
       )}
+      <AccountAccess />
       <form className="open-queue-form" onSubmit={open}>
         <h2>Open another queue</h2>
         <label htmlFor="saved-queue-link">Queue link or ID</label>
@@ -117,8 +120,9 @@ export function MyQueues() {
         {formError && <p role="alert">{formError}</p>}
       </form>
       <p className="field-hint">
-        Access is tied to this browser. On another device, use your queue link
-        and staff code.
+        {accountRecoveryEnabled
+          ? 'Save your access with an email above to use it on another device. You can also use a queue link and staff code.'
+          : 'Access is tied to this browser. On another device, use your queue link and staff code.'}
       </p>
     </>
   );

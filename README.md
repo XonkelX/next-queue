@@ -147,7 +147,7 @@ The full threat and authorization model is documented in [authorization and secu
 
 The production dependency audit is clean. The full development audit currently reports the upstream `braces` advisory [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm), inherited by the Next.js ESLint tooling. CI gates production dependencies with `npm audit --omit=dev`; it does not treat that development advisory as resolved. Do not downgrade the framework lint configuration to bypass it.
 
-Queue records currently have no automatic retention cleanup. Per-identity limits do not replace CAPTCHA or an account recovery system. The hosted database remains on its existing Free plan.
+Terminal ticket history has a 30-day retention policy with a rollout grace period. Account recovery and CAPTCHA integrations require the service activation steps below. The hosted database remains on its existing Free plan.
 
 ## Concurrency and idempotency
 
@@ -195,7 +195,7 @@ No custom domain, paid analytics, paid storage, add-on, trial, payment method, o
 
 This deployment has no commercial SLA. Supabase Free may pause an inactive project and both providers impose finite compute, database, bandwidth, build, function, and connection limits. The design is appropriate for small queues, not unbounded traffic or enterprise operations.
 
-Anonymous ownership is lost when browser data is cleared. A lost one-time staff code is unrecoverable without an already-authorized session. Automated anonymous-user retention, capability recovery/rotation, distributed rate limiting, monitoring, backups, and formal support are outside v1.0.
+Without a verified recovery email, clearing browser data loses anonymous ownership. A creator session can rotate a lost staff code. Optional email recovery, CAPTCHA setup and terminal history retention are described below. Automatic Auth-user deletion, managed backups and formal support are not implemented.
 
 ## Local setup
 
@@ -244,3 +244,23 @@ Database and browser validation additionally use `npm run db:test`, `npm run tes
 ## License
 
 No open-source license has been granted. All rights are reserved by Oniel Alejo Feliz.
+
+## Account recovery, CAPTCHA and history retention
+
+Email recovery is optional and disabled publicly until email delivery is configured. In My queues, users can verify an email with a one-time code while retaining their anonymous UUID and ownership. Recovery never creates an unrelated account. Switching identities is blocked when the browser has existing queue or ticket access; use a separate browser for a different account. No password is collected.
+
+Activation (requires service setup; no credentials belong in this repository):
+
+1. Configure a custom SMTP sender in Supabase Authentication. The default Supabase sender is not suitable for public delivery. Enable manual identity linking and email confirmations. Copy `supabase/templates/email-change.html` and `magic-link.html` into the corresponding hosted Email Change and Magic Link templates. Keep OTP expiry at most one hour and rate limits enabled. The local config already uses these templates.
+2. Verify delivery, conversion with the same UUID, and recovery in a fresh browser. Then set `NEXT_PUBLIC_ACCOUNT_RECOVERY_ENABLED=true` in Vercel and redeploy. Leave it false until this passes. Do not push the entire local Supabase config to production: it includes localhost URLs and development settings.
+3. Create a Cloudflare Turnstile managed widget for `next-queue-omega.vercel.app` (and the specific development hosts required). Add only its public site key as `NEXT_PUBLIC_TURNSTILE_SITE_KEY` in Vercel and deploy first. Configure its matching secret in Supabase Auth CAPTCHA settings and enable Turnstile there. Test a fresh anonymous session, email login and invalid/missing-token rejection. Frontend rendering alone is not protection. Never use test keys in production. Roll back by disabling hosted CAPTCHA before removing the site key if verification prevents sign-in.
+
+Turnstile loads only when an authentication operation needs a fresh token. Verification can be cancelled, expires, restores keyboard focus, and never reuses a consumed token. Network errors preserve existing browser identities.
+
+`20261005010000_history_retention.sql` schedules hourly cleanup using pg_cron, with a 30-day rollout grace period. Completed/skipped tickets older than 30 days, their private names and associated events are deleted in batches of at most 1,000 per queue and 50 queues per run. Non-ticket events older than 30 days, expired viewer grants and obsolete access-attempt counters are cleaned too. Active tickets, queues, staff/owner identities and Auth users remain. Command records remain as replay tombstones so old retries cannot repeat actions. Retention does not cover provider backups or operational logs. The public privacy page describes these limits.
+
+Monitor `cron.job_run_details` for the `next-history-retention` job. Its own run logs are retained for seven days. Pause safely with `select cron.unschedule('next-history-retention');` before changing policy; deleted history is not recoverable through the app. Browser roles cannot call the cleanup function or change its rollout date.
+
+Validation: unit tests cover account conflicts, verification failures, CAPTCHA token lifecycle and offline identity preservation; `004_retention.test.sql` covers grace periods, deletion scope, active/recent preservation, privilege denial and replay protection. `tests/integration/account-recovery.test.ts` exercises real Auth and the local Mailpit inbox without delivering external email.
+
+Primary references: [Supabase anonymous identity conversion](https://supabase.com/docs/guides/auth/auth-anonymous), [SMTP requirements](https://supabase.com/docs/guides/auth/auth-smtp), [CAPTCHA](https://supabase.com/docs/guides/auth/auth-captcha), [Supabase Cron](https://supabase.com/docs/guides/cron).

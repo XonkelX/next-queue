@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { QueueSharing } from './queue-sharing';
 import { SupabaseQueueAdapter } from '@/lib/realtime/supabase-adapter';
 import { QueueAdapterError } from '@/lib/realtime/errors';
+import { accountRecoveryEnabled } from '@/lib/supabase/account';
 
 export function CreateQueuePanel() {
   const adapter = useMemo(() => {
@@ -166,6 +167,14 @@ export function CreateQueuePanel() {
               </Link>
             </div>
             <QueueSharing slug={created.slug} />
+            {accountRecoveryEnabled && (
+              <p>
+                <Link href="/queues#account-heading">
+                  Save your access with an email
+                </Link>{' '}
+                to recover this queue on another device.
+              </p>
+            )}
           </div>
         )}
         {!created && (

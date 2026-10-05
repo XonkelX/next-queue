@@ -13,6 +13,7 @@ function client(existing = false) {
   const user = { id: '60000000-0000-4000-8000-000000000001' };
   const value = {
     auth: {
+      getSession: vi.fn(async () => ({ data: { session: null }, error: null })),
       getUser: vi.fn(async () => ({
         data: { user: existing ? user : null },
         error: existing ? null : { message: 'session missing' },
@@ -24,6 +25,17 @@ function client(existing = false) {
 }
 
 describe('ensureAnonymousSession', () => {
+  it('does not replace a saved identity when validation is offline', async () => {
+    const fake = client();
+    fake.value.auth.getSession.mockResolvedValueOnce({
+      data: { session: { user: { id: 'saved' } } } as never,
+      error: null,
+    });
+    await expect(ensureAnonymousSession(fake.typed)).rejects.toBeInstanceOf(
+      AnonymousSessionError,
+    );
+    expect(fake.value.auth.signInAnonymously).not.toHaveBeenCalled();
+  });
   it('reuses an existing browser session', async () => {
     const fake = client(true);
     await expect(ensureAnonymousSession(fake.typed)).resolves.toMatchObject({

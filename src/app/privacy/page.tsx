@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SiteFooter } from '@/components/site-footer';
+import { accountRecoveryEnabled } from '@/lib/supabase/account';
 
 export const metadata: Metadata = {
   title: 'Privacy',
@@ -21,6 +22,8 @@ export default function PrivacyPage() {
           We store an anonymous user identifier, queue and ticket details,
           timestamps, and service actions. A first name is optional. Session
           credentials are stored in your browser to keep your access active.
+          {accountRecoveryEnabled &&
+            ' If you choose to save your access, Supabase also stores your verified email address and sends authentication codes to it.'}
           Hosting and database providers may also process connection
           information, such as IP addresses, in their operational logs.
         </p>
@@ -38,15 +41,28 @@ export default function PrivacyPage() {
           original browser session. Clearing browser data removes local access;
           a saved staff code can restore staff access, but not the original
           creator identity or a customer ticket.
+          {accountRecoveryEnabled &&
+            ' If you verified an email in My queues before losing access, you can recover the same identity using that email.'}
         </p>
         <h2>Storage and retention</h2>
         <p>
           Next uses Supabase for authentication, database storage and live
-          updates, and Vercel for hosting. Queue history currently has no
-          automatic deletion period. Closing a queue does not delete its
-          records. Avoid entering sensitive information in a queue name or
-          optional first name.
+          updates, and Vercel for hosting. Completed and cancelled tickets,
+          their optional names and associated events are eligible for automatic
+          deletion after 30 days. Cleanup runs hourly in batches, beginning
+          November 4, 2026. Active tickets are preserved. Queue settings,
+          ownership, staff access, authentication accounts and command records
+          used to prevent duplicate actions remain stored without an automatic
+          deletion period. Closing a queue does not erase these records. Avoid
+          entering sensitive information in queue names or optional first names.
         </p>
+        {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+          <p>
+            Cloudflare Turnstile checks the browser during authentication to
+            reduce automated abuse. Cloudflare may process connection and device
+            information for this verification.
+          </p>
+        )}
         <p>
           <Link href="/">Back to Next</Link>
         </p>

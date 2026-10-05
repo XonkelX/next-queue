@@ -1,0 +1,41 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(1);
+insert into auth.users(id,aud,role,is_anonymous,created_at,updated_at)
+values ('62000000-0000-4000-8000-000000000001','authenticated','authenticated',true,now(),now());
+do $$
+declare r jsonb; q uuid; slug text; old_ticket uuid; active_ticket uuid; request uuid := gen_random_uuid();
+begin
+  assert not has_function_privilege('authenticated','private.prune_queue_history()','EXECUTE'), 'clients cannot prune';
+  assert not has_function_privilege('anon','private.prune_queue_history()','EXECUTE'), 'anonymous callers cannot prune';
+  perform set_config('request.jwt.claim.sub','62000000-0000-4000-8000-000000000001',true);
+  r := public.create_queue('Retention regression','R',gen_random_uuid());
+  q := (r#>>'{queue,id}')::uuid; slug := r#>>'{queue,slug}';
+  r := public.join_queue(slug,'Remove this name',request);
+  old_ticket := (r->>'ownEntryId')::uuid;
+  perform public.leave_queue(q,old_ticket,gen_random_uuid());
+  update public.queue_entries set skipped_at = now() - interval '31 days', updated_at = now() - interval '31 days' where id = old_ticket;
+  r := public.join_queue(slug,'Keep active name',gen_random_uuid());
+  active_ticket := (r->>'ownEntryId')::uuid;
+  update public.queue_entries set updated_at = now() - interval '60 days' where id = active_ticket;
+  update private.retention_settings set starts_at = now() + interval '1 day';
+  assert private.prune_queue_history() = 0, 'rollout grace period prevents deletion';
+  assert exists(select 1 from public.queue_entries where id = old_ticket), 'old ticket retained during grace';
+  update private.retention_settings set starts_at = now() - interval '1 day';
+  perform private.prune_queue_history();
+  assert not exists(select 1 from public.queue_entries where id = old_ticket), 'expired ticket removed';
+  assert not exists(select 1 from public.queue_entry_private where entry_id = old_ticket), 'expired name removed';
+  assert not exists(select 1 from public.queue_events where entry_id = old_ticket), 'associated events removed';
+  assert exists(select 1 from public.queue_entry_private where entry_id = active_ticket), 'old active ticket and name preserved';
+  assert private.is_staff(q,auth.uid()), 'owner membership preserved';
+  assert exists(select 1 from public.queue_commands where request_id = request), 'replay tombstone retained';
+  perform public.leave_queue(q,active_ticket,gen_random_uuid());
+  perform private.prune_queue_history();
+  assert exists(select 1 from public.queue_entries where id = active_ticket), 'recent terminal ticket preserved';
+  perform public.join_queue(slug,null,request);
+  assert not exists(select 1 from public.queue_entries where queue_id=q and status='WAITING'), 'expired JOIN replay cannot issue new ticket';
+end;
+$$;
+select pass('Retention preserves active work, identities, recent history and replay protection');
+select * from finish();
+rollback;
